@@ -1204,17 +1204,49 @@ DIM_4_1_CHECKS: [check numbers or none]`;
     const mpf = document.getElementById('mpf');
     if(mpf) mpf.style.width = '40%';
 
-    dimIds.forEach(dimId=>{
-      const key = dimId.replace(/\./g,'_');
-      const ratingRx = new RegExp('DIM_'+key+'_RATING:\s*(.+?)(?:\n|$)','i');
-      const notesRx = new RegExp('DIM_'+key+'_NOTES:\s*([\s\S]+?)(?=DIM_'+key+'_CHECKS:|\nDIM_[0-9]|$)','i');
-      const checksRx = new RegExp('DIM_'+key+'_CHECKS:\s*(.+?)(?:\n|$)','i');
-      const rm = text.match(ratingRx);
-      const nm = text.match(notesRx);
-      const cm = text.match(checksRx);
+    // Log raw AI response for debugging
+    console.log('AI RAW RESPONSE:', text.substring(0, 500));
 
-      if(rm){
-        const raw = rm[1].trim().toLowerCase();
+    // Parse the response into blocks per dimension
+    // Split on any DIM_ marker to get blocks
+    const blocks = {};
+    const lines = text.split('\n');
+    let currentDim = null;
+    let currentField = null;
+    let buffer = [];
+
+    const flushBuffer = () => {
+      if(currentDim && currentField && buffer.length){
+        if(!blocks[currentDim]) blocks[currentDim] = {};
+        blocks[currentDim][currentField] = buffer.join('\n').trim();
+        buffer = [];
+      }
+    };
+
+    lines.forEach(line => {
+      // Check if this line starts a new DIM field
+      const dimMatch = line.match(/^DIM_([0-9]+_[0-9]+)_(RATING|NOTES|CHECKS):\s*(.*)/i);
+      if(dimMatch){
+        flushBuffer();
+        currentDim = dimMatch[1].replace(/_/g,'.');
+        currentField = dimMatch[2].toUpperCase();
+        buffer = [dimMatch[3].trim()];
+      } else if(currentDim && currentField) {
+        // Continuation line for current field
+        buffer.push(line);
+      }
+    });
+    flushBuffer();
+
+    console.log('Parsed blocks:', Object.keys(blocks));
+
+    dimIds.forEach(dimId=>{
+      const block = blocks[dimId] || {};
+      console.log('DIM', dimId, ':', block.RATING, '| notes len:', (block.NOTES||'').length);
+
+      // Apply rating
+      if(block.RATING){
+        const raw = block.RATING.toLowerCase();
         let code = null;
         for(const [k,v] of Object.entries(ratingMap)){ if(raw.includes(k)){code=v;break;} }
         if(code && code !== 'NA'){
@@ -1227,20 +1259,18 @@ DIM_4_1_CHECKS: [check numbers or none]`;
         }
       }
 
-      // Auto-fill evidence notes from observation text
-      if(nm){
+      // Fill evidence box
+      if(block.NOTES){
         const notesEl = document.getElementById('notes-'+dimId);
-        if(notesEl){
-          const newNote = nm[1].trim().replace(/\nDIM_[0-9].*/s,'').replace(/DIM_[0-9][._].*/s,'').trim();
-          if(newNote && newNote.toLowerCase() !== 'insufficient evidence'){
-            notesEl.value = newNote;
-          }
+        const cleaned = block.NOTES.trim();
+        if(notesEl && cleaned && cleaned.toLowerCase() !== 'insufficient evidence' && cleaned.length > 5){
+          notesEl.value = cleaned;
         }
       }
 
-      // Auto-check indicators that were observed
-      if(cm){
-        const checksStr = cm[1].trim().toLowerCase();
+      // Auto-check indicators
+      if(block.CHECKS){
+        const checksStr = block.CHECKS.toLowerCase();
         if(checksStr !== 'none' && checksStr !== 'insufficient evidence'){
           const dim = DOMAINS.flatMap(d=>d.dims).find(d=>d.id===dimId);
           if(dim){
@@ -1250,8 +1280,8 @@ DIM_4_1_CHECKS: [check numbers or none]`;
               if(dim.checks[idx]){
                 const cb = document.getElementById(dim.checks[idx].id);
                 const row = document.getElementById('row-'+dim.checks[idx].id);
-                if(cb){ cb.checked = true; }
-                if(row){ row.classList.add('checked'); }
+                if(cb) cb.checked = true;
+                if(row) row.classList.add('checked');
               }
             });
           }
