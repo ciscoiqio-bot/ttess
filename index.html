@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pre-K T-TESS Walkthrough Observer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<style>
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #f0ede8;
+  --border: #ddd9d2;
+  --border2: #c8c3bb;
+  --text: #1a1814;
+  --text2: #6b6560;
+  --text3: #9b9590;
+  --accent: #1a4a7a;
+  --accent-light: #e8f0f8;
+  --D: #4a3f8c; --D-bg: #f0eefa; --D-border: #c8c0f0;
+  --A: #1a5c8a; --A-bg: #e8f4fb; --A-border: #b0d4ee;
+  --P: #2d6b2d; --P-bg: #eaf4ea; --P-border: #a8d4a8;
+  --DEV: #8a5c1a; --DEV-bg: #fbf4e8; --DEV-border: #eed4a0;
+  --I: #8a1a1a; --I-bg: #faeaea; --I-border: #eeb0b0;
+  --NA: #5a5550; --NA-bg: #f0ede8; --NA-border: #c8c3bb;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.app{max-width:820px;margin:0 auto;padding:24px 16px 100px}
+
+/* Header */
+.header{background:var(--accent);border-radius:var(--radius);padding:24px 28px;margin-bottom:24px;color:#fff;display:flex;gap:16px;align-items:flex-start}
+.header-icon{font-size:32px;flex-shrink:0;margin-top:2px}
+.header h1{font-size:20px;font-weight:600;margin-bottom:4px}
+.header p{font-size:13px;opacity:.75;line-height:1.5}
+.header-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:3px 10px;font-size:11px;margin-top:8px}
+
+/* Meta form */
+.meta-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.meta-grid .full{grid-column:1/-1}
+.field-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.field-label .req{color:#c0392b}
+input[type=text],input[type=date],input[type=time],select,textarea{width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,74,122,.12)}
+textarea{resize:vertical;min-height:72px;line-height:1.5}
+
+/* Progress */
+.progress-wrap{margin-bottom:20px}
+.progress-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.progress-label{font-size:13px;color:var(--text2)}
+.progress-pct{font-size:13px;font-weight:600;color:var(--accent)}
+.progress-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#1a4a7a,#2d7ab5);border-radius:3px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* Domain sections */
+.domain{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden}
+.domain-header{padding:16px 20px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;transition:background .12s}
+.domain-header:hover{background:var(--surface2)}
+.domain-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap;letter-spacing:.02em}
+.d1 .domain-badge{background:#e8f0f8;color:#1a4a7a}
+.d2 .domain-badge{background:#eaf4ea;color:#2d6b2d}
+.d3 .domain-badge{background:#fbf4e8;color:#8a5c1a}
+.d4 .domain-badge{background:#f0eefa;color:#4a3f8c}
+.domain-title{font-size:15px;font-weight:600;flex:1}
+.domain-summary{display:flex;gap:5px;align-items:center}
+.domain-chip{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px}
+.chevron{width:18px;height:18px;color:var(--text3);transition:transform .2s;flex-shrink:0}
+.chevron.open{transform:rotate(180deg)}
+.domain-body{display:none;border-top:1px solid var(--border)}
+.domain-body.open{display:block}
+
+/* Dimension */
+.dim{padding:20px;border-bottom:1px solid var(--border)}
+.dim:last-child{border-bottom:none}
+.dim-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px}
+.dim-desc{font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.5}
+.prek-callout{background:#e8f4fb;border-left:3px solid #1a5c8a;border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#1a4060;line-height:1.5}
+.prek-callout strong{font-weight:600}
+
+/* Checklist */
+.checklist{margin-bottom:14px}
+.check-row{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.check-row:last-child{border-bottom:none}
+.check-row input[type=checkbox]{width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:var(--accent);cursor:pointer}
+.check-row label{font-size:13px;color:var(--text);line-height:1.5;cursor:pointer;flex:1}
+.check-row label .sub{font-size:11px;color:#1a5c8a;display:block;margin-top:1px;font-style:italic}
+.check-row.checked label{color:var(--text2)}
+
+/* Rating */
+.rating-section{margin-bottom:14px}
+.rating-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.rating-row{display:flex;gap:6px;flex-wrap:wrap}
+.rating-btn{border:1px solid var(--border2);border-radius:20px;padding:5px 13px;font-size:12px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text2);transition:all .14s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.rating-btn:hover{background:var(--surface2);border-color:var(--border2)}
+.rating-btn.sel-D{background:var(--D-bg);border-color:var(--D-border);color:var(--D);font-weight:600}
+.rating-btn.sel-A{background:var(--A-bg);border-color:var(--A-border);color:var(--A);font-weight:600}
+.rating-btn.sel-P{background:var(--P-bg);border-color:var(--P-border);color:var(--P);font-weight:600}
+.rating-btn.sel-DEV{background:var(--DEV-bg);border-color:var(--DEV-border);color:var(--DEV);font-weight:600}
+.rating-btn.sel-I{background:var(--I-bg);border-color:var(--I-border);color:var(--I);font-weight:600}
+.rating-btn.sel-NA{background:var(--NA-bg);border-color:var(--NA-border);color:var(--NA);font-weight:600}
+
+/* AI box */
+.ai-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px}
+.ai-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px}
+.ai-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:6px}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:#1a4a7a;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ai-suggest-btn{font-size:12px;border:1px solid var(--accent);color:var(--accent);background:var(--surface);border-radius:var(--radius-sm);padding:4px 11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .14s;white-space:nowrap;flex-shrink:0}
+.ai-suggest-btn:hover{background:var(--accent-light)}
+.ai-suggest-btn:disabled{opacity:.5;cursor:not-allowed}
+.ai-result{font-size:13px;color:var(--text);line-height:1.6}
+.ai-result .ai-rating-suggest{display:inline-flex;align-items:center;gap:5px;font-weight:600;padding:2px 9px;border-radius:10px;margin:4px 0;font-size:12px}
+.ai-result .ai-D{background:var(--D-bg);color:var(--D)}
+.ai-result .ai-A{background:var(--A-bg);color:var(--A)}
+.ai-result .ai-P{background:var(--P-bg);color:var(--P)}
+.ai-result .ai-DEV{background:var(--DEV-bg);color:var(--DEV)}
+.ai-result .ai-I{background:var(--I-bg);color:var(--I)}
+.ai-loading{font-size:13px;color:var(--text2);font-style:italic}
+.accept-ai-btn{margin-top:8px;font-size:12px;border:1px solid var(--P-border);color:var(--P);background:var(--P-bg);border-radius:var(--radius-sm);padding:4px 11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500}
+.accept-ai-btn:hover{filter:brightness(.95)}
+textarea.notes{min-height:65px;font-size:13px;margin-bottom:0}
+
+/* Coaching panel */
+.coach-box{border-radius:var(--radius-sm);margin-top:14px;overflow:hidden;border:1px solid var(--border)}
+.coach-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:8px}
+.coach-header-left{display:flex;align-items:center;gap:8px}
+.coach-icon{font-size:16px}
+.coach-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.coach-current{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.coach-arrow{font-size:13px;opacity:.6}
+.coach-next{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.coach-generate-btn{font-size:12px;border:none;border-radius:var(--radius-sm);padding:5px 12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.coach-generate-btn:disabled{opacity:.5;cursor:not-allowed}
+.coach-body{padding:14px;border-top:1px solid var(--border);background:var(--surface)}
+.coach-loading{font-size:13px;font-style:italic;color:var(--text2)}
+.coach-steps{display:flex;flex-direction:column;gap:10px}
+.coach-step{display:flex;gap:10px;align-items:flex-start}
+.step-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.step-content{flex:1}
+.step-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.step-text{font-size:13px;color:var(--text);line-height:1.6}
+.step-example{font-size:12px;font-style:italic;color:var(--text2);margin-top:3px;padding:6px 10px;background:var(--surface2);border-radius:var(--radius-sm);border-left:3px solid var(--border2);line-height:1.5}
+.coach-top-note{font-size:12px;color:var(--text2);margin-bottom:10px;padding:6px 10px;background:var(--surface2);border-radius:var(--radius-sm);line-height:1.5}
+
+/* Color variants for coach by current rating */
+.coach-from-I .coach-header{background:#fff5f5;border-bottom:1px solid #eeb0b0}
+.coach-from-I .coach-title{color:#8a1a1a}
+.coach-from-I .coach-icon::before{content:'🔴'}
+.coach-from-I .coach-generate-btn{background:#8a1a1a;color:#fff}
+.coach-from-I .coach-generate-btn:hover{background:#6a1010}
+.coach-from-I .step-num{background:#faeaea;color:#8a1a1a}
+
+.coach-from-DEV .coach-header{background:#fffbf0;border-bottom:1px solid #eed4a0}
+.coach-from-DEV .coach-title{color:#8a5c1a}
+.coach-from-DEV .coach-icon::before{content:'🟠'}
+.coach-from-DEV .coach-generate-btn{background:#8a5c1a;color:#fff}
+.coach-from-DEV .coach-generate-btn:hover{background:#6a4010}
+.coach-from-DEV .step-num{background:#fbf4e8;color:#8a5c1a}
+
+.coach-from-P .coach-header{background:#f5fbf5;border-bottom:1px solid #a8d4a8}
+.coach-from-P .coach-title{color:#2d6b2d}
+.coach-from-P .coach-icon::before{content:'🟢'}
+.coach-from-P .coach-generate-btn{background:#2d6b2d;color:#fff}
+.coach-from-P .coach-generate-btn:hover{background:#1d5010}
+.coach-from-P .step-num{background:#eaf4ea;color:#2d6b2d}
+
+.coach-from-A .coach-header{background:#f0f7ff;border-bottom:1px solid #b0d4ee}
+.coach-from-A .coach-title{color:#1a5c8a}
+.coach-from-A .coach-icon::before{content:'🔵'}
+.coach-from-A .coach-generate-btn{background:#1a5c8a;color:#fff}
+.coach-from-A .coach-generate-btn:hover{background:#104060}
+.coach-from-A .step-num{background:#e8f4fb;color:#1a5c8a}
+
+.coach-from-D .coach-header{background:#f5f0ff;border-bottom:1px solid #c8c0f0}
+.coach-from-D .coach-title{color:#4a3f8c}
+.coach-from-D .step-num{background:#f0eefa;color:#4a3f8c}
+.coach-from-D .coach-generate-btn{background:#e0e0e0;color:#666;cursor:default}
+
+.coach-from-NA .coach-header{background:var(--surface2)}
+.coach-from-NA .coach-title{color:var(--text2)}
+
+/* API key */
+/* api key css removed - handled server side */
+
+/* Overall + Summary */
+.overall-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px}
+.overall-card h3{font-size:15px;font-weight:600;margin-bottom:14px}
+.overall-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.overall-btn{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 6px;font-size:11px;font-weight:500;text-align:center;cursor:pointer;background:var(--surface2);color:var(--text2);line-height:1.4;font-family:'DM Sans',sans-serif;transition:all .14s}
+.overall-btn:hover{background:var(--surface);border-color:var(--border2)}
+.overall-btn.sel-D{background:var(--D-bg);border-color:var(--D-border);color:var(--D);font-weight:600}
+.overall-btn.sel-A{background:var(--A-bg);border-color:var(--A-border);color:var(--A);font-weight:600}
+.overall-btn.sel-P{background:var(--P-bg);border-color:var(--P-border);color:var(--P);font-weight:600}
+.overall-btn.sel-DEV{background:var(--DEV-bg);border-color:var(--DEV-border);color:var(--DEV);font-weight:600}
+.overall-btn.sel-I{background:var(--I-bg);border-color:var(--I-border);color:var(--I);font-weight:600}
+
+/* Bottom bar */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:12px}
+.pill-D{background:var(--D-bg);color:var(--D)}
+.pill-A{background:var(--A-bg);color:var(--A)}
+.pill-P{background:var(--P-bg);color:var(--P)}
+.pill-DEV{background:var(--DEV-bg);color:var(--DEV)}
+.pill-I{background:var(--I-bg);color:var(--I)}
+.export-btns{display:flex;gap:8px;flex-shrink:0}
+.btn{padding:9px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:none;transition:all .15s;display:flex;align-items:center;gap:6px}
+.btn-txt{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
+.btn-txt:hover{background:var(--border)}
+.btn-word{background:#1a5c8a;color:#fff}
+.btn-word:hover{background:#1a4a7a}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:600px){
+  .meta-grid{grid-template-columns:1fr}
+  .overall-grid{grid-template-columns:repeat(3,1fr)}
+  .export-btns{flex-wrap:wrap}
+}
+
+/* Master notes box */
+.master-box{background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius);padding:20px;margin-bottom:20px}
+.master-box-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.master-box-icon{font-size:22px}
+.master-box-title{font-size:15px;font-weight:600;color:var(--accent);flex:1}
+.master-box-sub{font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5}
+textarea.master-notes{min-height:110px;font-size:14px;line-height:1.6;border-color:var(--border2)}
+.master-analyze-btn{margin-top:12px;width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.master-analyze-btn:hover{background:#1a5c8a}
+.master-analyze-btn:disabled{opacity:.5;cursor:not-allowed}
+.master-status{margin-top:10px;font-size:13px;color:var(--text2);display:none;line-height:1.6}
+.master-status.running{display:block;font-style:italic}
+.master-status.done{display:block;color:var(--P);font-style:normal;font-weight:500}
+.master-status.error{display:block;color:var(--I)}
+.master-progress-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.master-prog-track{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.master-prog-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <div class="header-icon">📋</div>
+  <div>
+    <h1>Pre-K T-TESS Walkthrough Observer</h1>
+    <p>Texas Teacher Evaluation & Support System — adapted for Pre-K (3–5 year olds)<br>Use during 15-minute walkthroughs or full observations</p>
+    <div class="header-badge">🤖 AI rating suggestions + growth coaching</div>
+  </div>
+</div>
+
+<!-- API key handled server-side via proxy -->
+
+<div class="meta-card">
+  <div class="meta-grid">
+    <div>
+      <div class="field-label">Teacher name <span class="req">*</span></div>
+      <input type="text" id="f-teacher" placeholder="First Last">
+    </div>
+    <div>
+      <div class="field-label">Observer</div>
+      <input type="text" id="f-observer" placeholder="Principal / AP">
+    </div>
+    <div>
+      <div class="field-label">Date</div>
+      <input type="date" id="f-date">
+    </div>
+    <div>
+      <div class="field-label">Time in room</div>
+      <input type="time" id="f-time">
+    </div>
+    <div class="full">
+      <div class="field-label">Activity / Lesson observed</div>
+      <input type="text" id="f-lesson" placeholder="e.g. Morning circle — letter sounds, center time (dramatic play + math manipulatives), read-aloud...">
+    </div>
+  </div>
+</div>
+
+
+<div class="master-box" id="master-box">
+  <div class="master-box-header">
+    <span class="master-box-icon">✍️</span>
+    <span class="master-box-title">Observation notes — type everything you saw</span>
+  </div>
+  <div class="master-box-sub">Write your raw notes here just like you normally would — what the teacher did, what students were doing, direct quotes, anything you noticed. When you're ready, click Analyze and AI will read your notes and suggest ratings and fill in evidence for each dimension. You can keep adding notes and re-analyze at any time.</div>
+  <textarea class="master-notes" id="master-notes" placeholder="e.g. Teacher walked in and sat at desk. Did not greet students at the door. Students came in and started talking loudly, no routine visible. After about 5 minutes teacher called students to the carpet but 3 kids didn't come. Teacher read a book about farm animals but only asked yes/no questions. When a student gave a wrong answer teacher moved on without addressing it..."></textarea>
+  <button class="master-analyze-btn" id="master-btn" onclick="masterAnalyze()">
+    ✨ Analyze my notes and suggest all ratings
+  </button>
+  <div class="master-status" id="master-status"></div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-meta">
+    <span class="progress-label" id="prog-label">0 of 12 dimensions rated</span>
+    <span class="progress-pct" id="prog-pct">0%</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+</div>
+
+<div id="domains"></div>
+
+<div class="overall-card">
+  <h3>Overall observation rating</h3>
+  <div class="overall-grid" id="overall-grid">
+    <button class="overall-btn" data-r="D" onclick="setOverall('D',this)">⭐ Distinguished</button>
+    <button class="overall-btn" data-r="A" onclick="setOverall('A',this)">Accomplished</button>
+    <button class="overall-btn" data-r="P" onclick="setOverall('P',this)">Proficient</button>
+    <button class="overall-btn" data-r="DEV" onclick="setOverall('DEV',this)">Developing</button>
+    <button class="overall-btn" data-r="I" onclick="setOverall('I',this)">Improvement needed</button>
+  </div>
+  <div class="field-label" style="margin-bottom:6px">Summary narrative &amp; next steps</div>
+  <textarea id="f-summary" placeholder="Summarize key strengths observed, areas for growth, and specific next steps for this teacher..."></textarea>
+</div>
+
+</div>
+
+<div class="bottom-bar">
+  <div class="pills" id="pills"></div>
+  <div class="export-btns">
+    <button class="btn btn-txt" onclick="exportTxt()">📄 Export .txt</button>
+    <button class="btn btn-word" onclick="exportWord()" id="word-btn">📝 Export Word</button>
+  </div>
+</div>
+
+<script>
+const PROXY_URL = 'https://ttess.ciscoiqio.workers.dev'; // e.g. https://prek-ttess.yourname.workers.dev
+
+const RATINGS = [
+  {code:'D',label:'Distinguished'},
+  {code:'A',label:'Accomplished'},
+  {code:'P',label:'Proficient'},
+  {code:'DEV',label:'Developing'},
+  {code:'I',label:'Improvement needed'},
+  {code:'NA',label:'N/A'}
+];
+
+const DOMAINS = [
+  {
+    id:'d1',cls:'d1',num:'Domain 1',title:'Planning',
+    dims:[
+      {
+        id:'1.1',title:'1.1 Standards & Alignment',
+        desc:'Teacher designs clear, sequential lessons aligned to Texas Pre-K Guidelines and appropriate for 3–5 year olds.',
+        prek:'<strong>Pre-K lens:</strong> Look for Texas Pre-K Guideline alignment, not K–12 TEKS. Objectives should be concrete and observable — "Students will sort objects by color using manipulatives" rather than vague goals.',
+        checks:[
+          {id:'c1',label:'Learning objectives are observable and developmentally appropriate for 3–5 year olds',sub:''},
+          {id:'c2',label:'Activities use hands-on, sensory, and play-based learning tied to a clear goal',sub:'Pre-K: intentional play counts as rigorous instruction'},
+          {id:'c3',label:'Lesson includes transitions and closure appropriate for short attention spans (15–20 min max)',sub:''},
+          {id:'c4',label:'Materials and activities are appropriate for diverse learners including ELL and SPED',sub:''},
+        ]
+      },
+      {
+        id:'1.2',title:'1.2 Data & Assessment',
+        desc:'Teacher uses formal and informal methods to measure student progress and inform instruction.',
+        prek:'<strong>Pre-K lens:</strong> Portfolios, anecdotal notes, running records, and observation checklists all count. No paper-pencil tests are expected at this level.',
+        checks:[
+          {id:'c5',label:'Teacher tracks individual student progress using observation, anecdotal notes, or checklists',sub:'Clipboard notes, sticky notes, or tablet apps all count'},
+          {id:'c6',label:'Activities allow teacher to informally assess understanding in real time',sub:''},
+          {id:'c7',label:'Teacher adjusts based on what she/he observes during the lesson (responsive teaching)',sub:''},
+        ]
+      },
+      {
+        id:'1.4',title:'1.4 Activities',
+        desc:'Teacher plans engaging, flexible activities that encourage exploration and age-appropriate problem solving.',
+        prek:'<strong>Pre-K lens:</strong> Higher-order thinking for Pre-K = sorting, comparing, predicting, retelling. Look for open-ended questions and student choice in materials or tasks.',
+        checks:[
+          {id:'c8',label:'Activities offer student choice or voice (center selection, material choices)',sub:''},
+          {id:'c9',label:'Open-ended questions promote thinking beyond yes/no responses',sub:'e.g. "What do you think will happen? Why doesn\'t this fit here?"'},
+          {id:'c10',label:'Grouping (pairs, small group, whole group) is intentional and developmentally appropriate',sub:''},
+        ]
+      }
+    ]
+  },
+  {
+    id:'d2',cls:'d2',num:'Domain 2',title:'Instruction',
+    dims:[
+      {
+        id:'2.1',title:'2.1 Achieving Expectations',
+        desc:'Teacher supports all learners in pursuit of high academic and social-emotional success.',
+        prek:'<strong>Pre-K lens:</strong> Look for teacher persisting with an activity until most children show understanding before moving on. Expectations must be developmentally appropriate, not based on K–12 standards.',
+        checks:[
+          {id:'c11',label:'Teacher holds high, developmentally appropriate expectations for ALL students',sub:''},
+          {id:'c12',label:'Teacher responds to misconceptions and follows through rather than moving past confusion',sub:''},
+          {id:'c13',label:'Students are given opportunities to try again or self-correct with support',sub:'Retrying, retelling, re-doing with scaffolding all count'},
+        ]
+      },
+      {
+        id:'2.2',title:'2.2 Content Knowledge & Expertise',
+        desc:'Teacher uses content and pedagogical expertise to execute developmentally appropriate instruction.',
+        prek:'<strong>Pre-K lens:</strong> Content knowledge includes child development, play theory, language acquisition, and early literacy — not just academic subject matter.',
+        checks:[
+          {id:'c14',label:'Teacher uses accurate vocabulary and concepts appropriate for Pre-K',sub:''},
+          {id:'c15',label:'Teacher connects today\'s activity to prior knowledge or past experiences',sub:'e.g. "Remember when we read about bears? What did they eat?"'},
+          {id:'c16',label:'Teacher integrates content across domains (math + literacy + science in one activity)',sub:''},
+        ]
+      },
+      {
+        id:'2.3',title:'2.3 Communication',
+        desc:'Teacher clearly communicates to support deeper learning and effective effort.',
+        prek:'<strong>Pre-K lens:</strong> Look for rich vocabulary, visual supports, gestures, and wait time. Questions should be open-ended and at varied complexity. Language modeling is instruction in Pre-K.',
+        checks:[
+          {id:'c17',label:'Teacher uses clear, warm, and encouraging verbal language',sub:''},
+          {id:'c18',label:'Teacher uses visual supports, gestures, or modeling alongside verbal instructions',sub:'Critical for ELL students and Pre-K learners'},
+          {id:'c19',label:'Teacher provides adequate wait time after asking a question (3–5 seconds minimum)',sub:''},
+          {id:'c20',label:'Teacher asks open-ended questions ("What do you notice? Tell me more about that...")',sub:''},
+        ]
+      },
+      {
+        id:'2.4',title:'2.4 Differentiation',
+        desc:'Teacher differentiates instruction to meet diverse student needs including developmental levels.',
+        prek:'<strong>Pre-K lens:</strong> Differentiation may look like varied center levels, scaffolded language support, or a TA working a small group simultaneously. Multiple entry points are the goal.',
+        checks:[
+          {id:'c21',label:'Multiple entry points are available (varied center levels, different materials)',sub:''},
+          {id:'c22',label:'Teacher circulates and adjusts support based on individual student needs in real time',sub:''},
+          {id:'c23',label:'ELL students receive language scaffolds (visuals, gestures, home language support)',sub:''},
+        ]
+      },
+      {
+        id:'2.5',title:'2.5 Monitor & Adjust',
+        desc:'Teacher collects and uses student progress data to make needed lesson adjustments in real time.',
+        prek:'<strong>Pre-K lens:</strong> Watch for teacher scanning the room, kneeling to student level, and redirecting the activity when confusion is evident. Responsive teaching is a hallmark of strong Pre-K practice.',
+        checks:[
+          {id:'c24',label:'Teacher actively monitors all students during activities (proximity, scanning, kneeling)',sub:''},
+          {id:'c25',label:'Teacher adjusts pacing, materials, or grouping based on student responses',sub:''},
+          {id:'c26',label:'Teacher re-engages students who appear off task, frustrated, or confused',sub:''},
+        ]
+      }
+    ]
+  },
+  {
+    id:'d3',cls:'d3',num:'Domain 3',title:'Learning Environment',
+    dims:[
+      {
+        id:'3.1',title:'3.1 Classroom Environment, Routines & Procedures',
+        desc:'Teacher organizes a safe, accessible and efficient classroom.',
+        prek:'<strong>Pre-K lens:</strong> Procedures should be visual (picture schedules), predictable, and child-initiated where possible. Centers should be clearly labeled with words and pictures.',
+        checks:[
+          {id:'c27',label:'Classroom is physically safe and organized for young children (accessible materials, no hazards)',sub:''},
+          {id:'c28',label:'Visual daily schedule is posted and referenced during transitions',sub:'Picture-based schedules are Pre-K best practice'},
+          {id:'c29',label:'Routines are consistent and children can navigate them with minimal adult prompting',sub:''},
+          {id:'c30',label:'Centers are clearly labeled with words and pictures for independent use',sub:''},
+        ]
+      },
+      {
+        id:'3.2',title:'3.2 Managing Student Behavior',
+        desc:'Teacher establishes, communicates and maintains clear, developmentally appropriate behavior expectations.',
+        prek:'<strong>Pre-K lens:</strong> Behavior management should be positive, preventive, and trauma-informed. Look for co-regulation, redirection, and proactive strategies — not punitive responses.',
+        checks:[
+          {id:'c31',label:'Behavior expectations are posted visually and referenced proactively',sub:''},
+          {id:'c32',label:'Teacher uses positive reinforcement and specific, descriptive praise',sub:'e.g. "I love how you used walking feet to the carpet"'},
+          {id:'c33',label:'Teacher uses calm redirection before escalation; dysregulation is handled with co-regulation',sub:''},
+        ]
+      },
+      {
+        id:'3.3',title:'3.3 Classroom Culture',
+        desc:'Teacher leads a mutually respectful, inclusive, joyful class of actively engaged learners.',
+        prek:'<strong>Pre-K lens:</strong> Look for student joy, curiosity, and peer collaboration. A warm, language-rich environment with student voice is a hallmark of Distinguished Pre-K practice.',
+        checks:[
+          {id:'c34',label:'Classroom feels warm, safe, and inviting — students appear joyful and comfortable',sub:''},
+          {id:'c35',label:'Students interact respectfully with peers during activities and transitions',sub:''},
+          {id:'c36',label:'Teacher validates student ideas and builds on student contributions',sub:''},
+        ]
+      }
+    ]
+  },
+  {
+    id:'d4',cls:'d4',num:'Domain 4',title:'Professional Practices',
+    dims:[
+      {
+        id:'4.1',title:'4.1 Professional Demeanor & Ethics',
+        desc:'Teacher meets professional standards for attendance, appearance, decorum and ethical responsibilities.',
+        prek:'',
+        checks:[
+          {id:'c37',label:'Teacher is present, punctual, and professionally prepared for instruction',sub:''},
+          {id:'c38',label:'Teacher maintains appropriate professional boundaries with students and families',sub:''},
+        ]
+      }
+    ]
+  }
+];
+
+const state = {ratings:{}, overallRating:null, aiResults:{}, openDomains:{d1:true}};
+
+function buildUI(){
+  const cont = document.getElementById('domains');
+  DOMAINS.forEach(dom=>{
+    const div = document.createElement('div');
+    div.className = `domain ${dom.cls}`;
+    div.id = dom.id;
+    const open = state.openDomains[dom.id];
+    div.innerHTML = `
+      <div class="domain-header" onclick="toggleDomain('${dom.id}')">
+        <span class="domain-badge">${dom.num}</span>
+        <span class="domain-title">${dom.title}</span>
+        <span class="domain-summary" id="sum-${dom.id}"></span>
+        <svg class="chevron ${open?'open':''}" id="chv-${dom.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="domain-body ${open?'open':''}" id="body-${dom.id}">
+        ${dom.dims.map(buildDim).join('')}
+      </div>`;
+    cont.appendChild(div);
+  });
+  updateProgress();
+  updatePills();
+  const now = new Date();
+  document.getElementById('f-date').value = now.toISOString().split('T')[0];
+  document.getElementById('f-time').value = now.toTimeString().slice(0,5);
+}
+
+function buildDim(dim){
+  return `<div class="dim" id="dim-${dim.id}">
+    <div class="dim-title">${dim.title}</div>
+    <div class="dim-desc">${dim.desc}</div>
+    ${dim.prek ? `<div class="prek-callout">${dim.prek}</div>` : ''}
+    <div class="checklist">
+      ${dim.checks.map(c=>`
+        <div class="check-row" id="row-${c.id}" onclick="toggleCheck('${c.id}',event)">
+          <input type="checkbox" id="${c.id}">
+          <label for="${c.id}">${c.label}${c.sub?`<span class="sub">${c.sub}</span>`:''}</label>
+        </div>`).join('')}
+    </div>
+    <div class="rating-section">
+      <div class="rating-label">Rating</div>
+      <div class="rating-row">
+        ${RATINGS.map(r=>`<button class="rating-btn" data-dim="${dim.id}" data-r="${r.code}" onclick="setRating('${dim.id}','${r.code}',this)">${r.label}</button>`).join('')}
+      </div>
+    </div>
+    <div class="ai-box">
+      <div class="ai-header">
+        <span class="ai-label"><span class="ai-dot"></span> AI rating assistant</span>
+        <button class="ai-suggest-btn" onclick="aiSuggest('${dim.id}')" id="ai-btn-${dim.id}">✨ Suggest rating</button>
+      </div>
+      <div id="ai-out-${dim.id}"><span style="font-size:12px;color:var(--text3)">Type observation notes below, then click "Suggest rating" for AI analysis.</span></div>
+    </div>
+    <div class="field-label" style="margin-bottom:5px">Observation notes</div>
+    <textarea class="notes" id="notes-${dim.id}" placeholder="Record specific evidence: what you saw the teacher do, what students were doing, direct quotes, engagement level..." oninput="autoSave()"></textarea>
+    <div id="coach-${dim.id}" style="display:none"></div>
+  </div>`;
+}
+
+function toggleCheck(id, e){
+  if(e.target.type==='checkbox') return;
+  const cb = document.getElementById(id);
+  cb.checked = !cb.checked;
+  document.getElementById('row-'+id).classList.toggle('checked', cb.checked);
+}
+
+function toggleDomain(id){
+  const body = document.getElementById('body-'+id);
+  const chv = document.getElementById('chv-'+id);
+  const open = body.classList.contains('open');
+  body.classList.toggle('open',!open);
+  chv.classList.toggle('open',!open);
+  state.openDomains[id] = !open;
+}
+
+function setRating(dimId, code, btn){
+  state.ratings[dimId] = code;
+  document.querySelectorAll(`[data-dim="${dimId}"]`).forEach(b=>b.className='rating-btn');
+  btn.classList.add('sel-'+code);
+  updateProgress();
+  updatePills();
+  updateDomainSummary(dimId);
+  showCoachPanel(dimId, code);
+}
+
+const NEXT_RATING = {I:'DEV', DEV:'P', P:'A', A:'D', D:null, NA:null};
+const RATING_LABEL = {D:'Distinguished',A:'Accomplished',P:'Proficient',DEV:'Developing',I:'Improvement Needed',NA:'N/A'};
+
+function showCoachPanel(dimId, code){
+  const el = document.getElementById('coach-'+dimId);
+  if(!el) return;
+  const next = NEXT_RATING[code];
+  el.style.display = 'block';
+
+  if(code==='D'){
+    el.innerHTML = `<div class="coach-box coach-from-D">
+      <div class="coach-header">
+        <div class="coach-header-left">
+          <span class="coach-icon"></span>
+          <span class="coach-title">Distinguished — top rating achieved!</span>
+        </div>
+      </div>
+      <div class="coach-body"><p style="font-size:13px;color:var(--text2)">This teacher is already performing at the highest level for this dimension. Share this strength with them and consider highlighting it as a model for colleagues. Consider nominating this teacher for a leadership or mentor role in this area.</p></div>
+    </div>`;
+    return;
+  }
+  if(code==='NA'){
+    el.innerHTML=''; el.style.display='none'; return;
+  }
+
+  const nextLabel = RATING_LABEL[next];
+  const curLabel = RATING_LABEL[code];
+  const dim = DOMAINS.flatMap(d=>d.dims).find(d=>d.id===dimId);
+
+  el.innerHTML = `<div class="coach-box coach-from-${code}">
+    <div class="coach-header">
+      <div class="coach-header-left">
+        <span class="coach-icon"></span>
+        <span class="coach-title">How to grow to the next level</span>
+        <span class="coach-current" style="background:var(--${code}-bg);color:var(--${code})">${curLabel}</span>
+        <span class="coach-arrow">→</span>
+        <span class="coach-next" style="background:var(--${next}-bg);color:var(--${next})">${nextLabel}</span>
+      </div>
+      <button class="coach-generate-btn" id="coach-btn-${dimId}" onclick="generateCoaching('${dimId}','${code}','${next}')">
+        ✨ Generate coaching tips
+      </button>
+    </div>
+    <div class="coach-body" id="coach-body-${dimId}">
+      <p style="font-size:13px;color:var(--text2);font-style:italic">Click "Generate coaching tips" for specific, real-life suggestions written for Pre-K teachers. You can also type in the notes box first for more personalized feedback.</p>
+    </div>
+  </div>`;
+}
+
+async function generateCoaching(dimId, currentCode, nextCode){
+
+  const btn = document.getElementById('coach-btn-'+dimId);
+  const body = document.getElementById('coach-body-'+dimId);
+  const dim = DOMAINS.flatMap(d=>d.dims).find(d=>d.id===dimId);
+  const notes = document.getElementById('notes-'+dimId)?.value||'';
+  const checks = dim.checks.filter(c=>document.getElementById(c.id)?.checked).map(c=>c.label);
+  const curLabel = RATING_LABEL[currentCode];
+  const nextLabel = RATING_LABEL[nextCode];
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  body.innerHTML = '<p class="coach-loading">Writing coaching suggestions tailored to Pre-K classrooms...</p>';
+
+  const prompt = `You are an instructional coach helping a Pre-K teacher (who teaches 3-5 year olds) grow their practice.
+
+The teacher was just rated "${curLabel}" on the T-TESS dimension: ${dim.title}
+The goal is to help them move up to "${nextLabel}".
+
+DIMENSION DESCRIPTION: ${dim.desc}
+PRE-K CONTEXT: ${dim.prek.replace(/<[^>]+>/g,'')}
+${checks.length>0 ? `\nINDICATORS ALREADY OBSERVED:\n${checks.map(c=>'✓ '+c).join('\n')}` : ''}
+${notes ? `\nOBSERVATION NOTES FROM PRINCIPAL:\n${notes}` : ''}
+
+Write coaching advice directly to the teacher using warm, encouraging, plain language — like a supportive mentor, not a report. Avoid jargon. Use "you" to speak directly to them.
+
+The difference between "${curLabel}" and "${nextLabel}" for this dimension:
+- Improvement Needed → Developing: moving from rarely/few to sometimes/most
+- Developing → Proficient: moving from sometimes/most to consistently/all  
+- Proficient → Accomplished: adding proactive anticipation, cross-discipline integration, student initiative
+- Accomplished → Distinguished: students taking full ownership, enriching extensions, peer-to-peer learning
+
+Give exactly 3 concrete, actionable coaching steps. Each step must:
+1. Be written in plain, conversational language a Pre-K teacher can immediately understand
+2. Include a REAL-LIFE EXAMPLE of exactly what this looks like in a Pre-K classroom — specific, vivid, and practical (name a center, an activity, a phrase a teacher could actually say)
+3. Be specific to Pre-K (3-5 year olds), not generic K-12 advice
+
+Format EXACTLY like this (no markdown, no asterisks):
+INTRO: [One warm, encouraging sentence acknowledging what the teacher is already doing well and framing the next step positively]
+STEP1_WHAT: [Short action title, 5-8 words]
+STEP1_HOW: [2-3 sentences of plain explanation]
+STEP1_EXAMPLE: [A specific real-life example: "For instance, during morning meeting you could..." or "In the dramatic play center, try..."]
+STEP2_WHAT: [Short action title]
+STEP2_HOW: [2-3 sentences]
+STEP2_EXAMPLE: [Specific real-life example]
+STEP3_WHAT: [Short action title]
+STEP3_HOW: [2-3 sentences]
+STEP3_EXAMPLE: [Specific real-life example]
+CLOSING: [One sentence of encouragement — what this will look like when it clicks]`;
+
+  try{
+    const res = await fetch(PROXY_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({max_tokens:900,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const t = data.content[0].text;
+
+    const get = (key) => {
+      const m = t.match(new RegExp(key+':\\s*([\\s\\S]+?)(?=\\n[A-Z0-9_]+:|$)'));
+      return m ? m[1].trim() : '';
+    };
+
+    const intro = get('INTRO');
+    const closing = get('CLOSING');
+    const steps = [1,2,3].map(n=>({
+      what: get(`STEP${n}_WHAT`),
+      how: get(`STEP${n}_HOW`),
+      example: get(`STEP${n}_EXAMPLE`)
+    }));
+
+    const numBg = `var(--${nextCode}-bg)`;
+    const numColor = `var(--${nextCode})`;
+
+    body.innerHTML = `
+      <div class="coach-steps">
+        ${intro ? `<p class="coach-top-note">${intro}</p>` : ''}
+        ${steps.map((s,i)=>s.what?`
+        <div class="coach-step">
+          <div class="step-num" style="background:${numBg};color:${numColor}">${i+1}</div>
+          <div class="step-content">
+            <div class="step-label" style="color:${numColor}">${s.what}</div>
+            <div class="step-text">${s.how}</div>
+            ${s.example?`<div class="step-example">💡 ${s.example}</div>`:''}
+          </div>
+        </div>`:'').join('')}
+        ${closing?`<p style="font-size:13px;color:var(--text2);font-style:italic;margin-top:4px;padding-top:8px;border-top:1px solid var(--border)">🌟 ${closing}</p>`:''}
+      </div>`;
+
+    // Store for export
+    state.coaching = state.coaching||{};
+    state.coaching[dimId] = {currentCode, nextCode, intro, steps, closing};
+
+  }catch(err){
+    body.innerHTML = `<p style="font-size:13px;color:var(--I)">Could not generate tips: ${err.message}. Check your API key and try again.</p>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '✨ Regenerate tips';
+}
+
+function setOverall(code, btn){
+  state.overallRating = code;
+  document.querySelectorAll('.overall-btn').forEach(b=>b.className='overall-btn');
+  btn.classList.add('sel-'+code);
+}
+
+function updateDomainSummary(dimId){
+  const dom = DOMAINS.find(d=>d.dims.some(dim=>dim.id===dimId));
+  if(!dom) return;
+  const sumEl = document.getElementById('sum-'+dom.id);
+  const chips = dom.dims.map(dim=>{
+    const r = state.ratings[dim.id];
+    if(!r) return '';
+    return `<span class="domain-chip pill-${r}" style="background:var(--${r}-bg);color:var(--${r})">${r==='DEV'?'Dev':r==='NA'?'N/A':r}</span>`;
+  }).join('');
+  sumEl.innerHTML = chips;
+}
+
+function updateProgress(){
+  const total = DOMAINS.reduce((a,d)=>a+d.dims.length,0);
+  const rated = Object.keys(state.ratings).length;
+  const pct = Math.round((rated/total)*100);
+  document.getElementById('prog-fill').style.width = pct+'%';
+  document.getElementById('prog-label').textContent = `${rated} of ${total} dimensions rated`;
+  document.getElementById('prog-pct').textContent = pct+'%';
+}
+
+function updatePills(){
+  const counts = {};
+  RATINGS.forEach(r=>counts[r.code]=0);
+  Object.values(state.ratings).forEach(r=>counts[r]=(counts[r]||0)+1);
+  const pills = document.getElementById('pills');
+  pills.innerHTML = '';
+  RATINGS.forEach(r=>{
+    if(counts[r.code]>0){
+      const p = document.createElement('span');
+      p.className = `pill pill-${r.code}`;
+      p.textContent = `${r.label}: ${counts[r.code]}`;
+      pills.appendChild(p);
+    }
+  });
+}
+
+function autoSave(){}
+
+// --- AI SUGGESTION ---
+async function aiSuggest(dimId){
+  const notes = document.getElementById('notes-'+dimId).value.trim();
+  if(!notes){alert('Please type some observation notes first, then click "Suggest rating".');return;}
+  
+  const dim = DOMAINS.flatMap(d=>d.dims).find(d=>d.id===dimId);
+  const checks = dim.checks.filter(c=>document.getElementById(c.id)?.checked).map(c=>c.label);
+  
+  const btn = document.getElementById('ai-btn-'+dimId);
+  const out = document.getElementById('ai-out-'+dimId);
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+  out.innerHTML = '<div class="ai-loading">Analyzing observation notes against T-TESS criteria...</div>';
+  
+  const prompt = `You are an expert Texas T-TESS evaluator helping a principal evaluate a Pre-K teacher (3-5 year olds).
+
+DIMENSION: ${dim.title}
+DESCRIPTION: ${dim.desc}
+PRE-K CONTEXT: ${dim.prek.replace(/<[^>]+>/g,'')}
+
+INDICATORS OBSERVED (checked by observer):
+${checks.length>0 ? checks.map(c=>'• '+c).join('\n') : '(none checked)'}
+
+OBSERVATION NOTES FROM PRINCIPAL:
+${notes}
+
+T-TESS RATING SCALE for reference:
+- Distinguished: ALL students, student-centered, students take ownership, consistently, enriching extensions
+- Accomplished: ALL students, teacher-facilitated, regularly, proactively
+- Proficient: ALL students, teacher-directed, provides/does action
+- Developing: MOST students, sometimes, limited range
+- Improvement Needed: FEW students, rarely, teacher-centered actions missing
+
+Based on the observation notes and checked indicators, provide:
+1. Your suggested T-TESS rating (one of: Distinguished, Accomplished, Proficient, Developing, Improvement Needed)
+2. A brief 2-3 sentence rationale tied to specific evidence from the notes
+3. One specific commendation (strength observed)
+4. One specific area of growth with a concrete next step
+
+Format your response as:
+RATING: [rating name]
+RATIONALE: [2-3 sentences]
+STRENGTH: [1 sentence]
+GROWTH: [1 sentence with specific next step]`;
+
+  try{
+    const res = await fetch(PROXY_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({max_tokens:600,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    if(data.error){throw new Error(data.error.message);}
+    const text = data.content[0].text;
+    const ratingMatch = text.match(/RATING:\s*(.+)/i);
+    const rationaleMatch = text.match(/RATIONALE:\s*([\s\S]+?)(?=STRENGTH:|$)/i);
+    const strengthMatch = text.match(/STRENGTH:\s*([\s\S]+?)(?=GROWTH:|$)/i);
+    const growthMatch = text.match(/GROWTH:\s*([\s\S]+?)$/i);
+    
+    const ratingName = ratingMatch?ratingMatch[1].trim():'Unknown';
+    const ratingCode = ratingName.toLowerCase().includes('distinguished')?'D':ratingName.toLowerCase().includes('accomplished')?'A':ratingName.toLowerCase().includes('proficient')?'P':ratingName.toLowerCase().includes('developing')?'DEV':ratingName.toLowerCase().includes('improvement')?'I':'P';
+    
+    state.aiResults[dimId] = ratingCode;
+    
+    out.innerHTML = `
+      <div class="ai-result">
+        <div style="margin-bottom:8px">Suggested rating: <span class="ai-rating-suggest ai-${ratingCode}">${ratingName}</span></div>
+        ${rationaleMatch?`<p style="margin-bottom:6px"><strong>Rationale:</strong> ${rationaleMatch[1].trim()}</p>`:''}
+        ${strengthMatch?`<p style="margin-bottom:6px">✅ <strong>Strength:</strong> ${strengthMatch[1].trim()}</p>`:''}
+        ${growthMatch?`<p style="margin-bottom:8px">📈 <strong>Growth:</strong> ${growthMatch[1].trim()}</p>`:''}
+        <button class="accept-ai-btn" onclick="acceptAI('${dimId}','${ratingCode}')">Accept this rating</button>
+      </div>`;
+  }catch(err){
+    out.innerHTML = `<div style="font-size:13px;color:var(--I)">Error: ${err.message}. Check your API key and try again.</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '✨ Suggest rating';
+}
+
+function acceptAI(dimId, code){
+  const btns = document.querySelectorAll(`[data-dim="${dimId}"]`);
+  btns.forEach(b=>b.className='rating-btn');
+  const target = Array.from(btns).find(b=>b.dataset.r===code);
+  if(target){target.classList.add('sel-'+code);}
+  state.ratings[dimId] = code;
+  updateProgress();
+  updatePills();
+  updateDomainSummary(dimId);
+  showCoachPanel(dimId, code);
+}
+
+// --- EXPORT TXT ---
+function getFormData(){
+  return {
+    teacher: document.getElementById('f-teacher').value||'',
+    observer: document.getElementById('f-observer').value||'',
+    date: document.getElementById('f-date').value||'',
+    time: document.getElementById('f-time').value||'',
+    lesson: document.getElementById('f-lesson').value||'',
+    summary: document.getElementById('f-summary').value||'',
+    overall: state.overallRating ? RATINGS.find(r=>r.code===state.overallRating)?.label : 'Not rated'
+  };
+}
+
+function exportTxt(){
+  const f = getFormData();
+  let txt = `PRE-K T-TESS WALKTHROUGH OBSERVATION REPORT\n${'='.repeat(52)}\n\n`;
+  txt += `Teacher:           ${f.teacher}\nObserver:          ${f.observer}\nDate:              ${f.date}\nTime in room:      ${f.time}\nActivity observed: ${f.lesson}\n\n`;
+  txt += `OVERALL RATING: ${f.overall}\n\n`;
+  
+  DOMAINS.forEach(dom=>{
+    txt += `\n${'─'.repeat(52)}\n${dom.num.toUpperCase()}: ${dom.title.toUpperCase()}\n${'─'.repeat(52)}\n`;
+    dom.dims.forEach(dim=>{
+      const r = state.ratings[dim.id];
+      const rLabel = r ? RATINGS.find(x=>x.code===r)?.label : 'Not rated';
+      const notes = document.getElementById('notes-'+dim.id)?.value||'';
+      const checked = dim.checks.filter(c=>document.getElementById(c.id)?.checked).map(c=>c.label);
+      txt += `\n${dim.title}\nRating: ${rLabel}\n`;
+      if(checked.length) txt += `Indicators observed:\n${checked.map(i=>'  ✓ '+i).join('\n')}\n`;
+      if(notes) txt += `Notes:\n  ${notes.replace(/\n/g,'\n  ')}\n`;
+      const coaching = (state.coaching||{})[dim.id];
+      if(coaching && coaching.steps && coaching.steps.some(s=>s.what)){
+        const nextLbl = RATING_LABEL[coaching.nextCode]||'';
+        const curLbl = RATING_LABEL[coaching.currentCode]||'';
+        txt += `Growth Coaching (${curLbl} → ${nextLbl}):\n`;
+        if(coaching.intro) txt += `  ${coaching.intro}\n`;
+        coaching.steps.forEach((s,i)=>{
+          if(!s.what) return;
+          txt += `  Step ${i+1}: ${s.what}\n  ${s.how}\n`;
+          if(s.example) txt += `  Example: ${s.example}\n`;
+        });
+        if(coaching.closing) txt += `  ${coaching.closing}\n`;
+      }
+    });
+  });
+  
+  if(f.summary) txt += `\n${'─'.repeat(52)}\nSUMMARY & NEXT STEPS\n${'─'.repeat(52)}\n${f.summary}\n`;
+  
+  const blob = new Blob([txt],{type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `PreK-TTESS-${f.teacher.replace(/\s+/g,'-')||'observation'}-${f.date||'report'}.txt`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// --- EXPORT WORD ---
+async function exportWord(){
+  const btn = document.getElementById('word-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Building...';
+  
+  try{
+    const {
+      Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+      AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType,
+      LevelFormat, VerticalAlign
+    } = docx;
+    
+    const f = getFormData();
+    const borderColor = "C8C3BB";
+    const accentColor = "1A4A7A";
+    const b = (style, size=1) => ({top:{style,size,color:borderColor},bottom:{style,size,color:borderColor},left:{style,size,color:borderColor},right:{style,size,color:borderColor}});
+    const borders = b(BorderStyle.SINGLE);
+    const noBorder = {top:{style:BorderStyle.NONE,size:0},bottom:{style:BorderStyle.NONE,size:0},left:{style:BorderStyle.NONE,size:0},right:{style:BorderStyle.NONE,size:0}};
+    
+    const RATING_COLORS = {D:'4A3F8C',A:'1A5C8A',P:'2D6B2D',DEV:'8A5C1A',I:'8A1A1A',NA:'5A5550'};
+    const RATING_BG = {D:'F0EEFA',A:'E8F4FB',P:'EAF4EA',DEV:'FBF4E8',I:'FAEAEA',NA:'F0EDE8'};
+    
+    const makeCell = (content, options={}) => new TableCell({
+      borders,
+      width: options.width || {size:4680,type:WidthType.DXA},
+      shading: options.bg ? {fill:options.bg,type:ShadingType.CLEAR} : undefined,
+      margins:{top:80,bottom:80,left:120,right:120},
+      verticalAlign: VerticalAlign.TOP,
+      children: Array.isArray(content) ? content : [new Paragraph({children:[new TextRun({text:String(content),font:'Arial',size:options.size||20,bold:options.bold||false,color:options.color||'333333'})]})]
+    });
+    
+    const headerRow = (label, val, w1=3120, w2=6240) => new TableRow({children:[
+      makeCell(label,{width:{size:w1,type:WidthType.DXA},bold:true,bg:'E8F0F8',color:'1A4A7A'}),
+      makeCell(val||'—',{width:{size:w2,type:WidthType.DXA}})
+    ]});
+    
+    const children = [];
+    
+    // Title
+    children.push(new Paragraph({
+      alignment:AlignmentType.CENTER,
+      spacing:{after:120},
+      children:[new TextRun({text:'Pre-K T-TESS Walkthrough Observation',font:'Arial',size:32,bold:true,color:accentColor})]
+    }));
+    children.push(new Paragraph({
+      alignment:AlignmentType.CENTER,
+      spacing:{after:320},
+      children:[new TextRun({text:'Texas Teacher Evaluation & Support System — Pre-Kindergarten Adaptation',font:'Arial',size:20,color:'6B6560'})]
+    }));
+    
+    // Meta table
+    children.push(new Table({
+      width:{size:9360,type:WidthType.DXA},
+      columnWidths:[3120,6240],
+      rows:[
+        headerRow('Teacher',f.teacher),
+        headerRow('Observer',f.observer),
+        headerRow('Date',f.date),
+        headerRow('Time in classroom',f.time),
+        headerRow('Activity / Lesson observed',f.lesson),
+        headerRow('Overall rating', f.overall + (state.overallRating ? '' : ''))
+      ]
+    }));
+    children.push(new Paragraph({spacing:{after:320},children:[]}));
+    
+    // Domains
+    DOMAINS.forEach(dom=>{
+      children.push(new Paragraph({
+        spacing:{before:240,after:120},
+        children:[new TextRun({text:`${dom.num}: ${dom.title}`,font:'Arial',size:26,bold:true,color:accentColor})]
+      }));
+      
+      dom.dims.forEach(dim=>{
+        const r = state.ratings[dim.id];
+        const rLabel = r ? RATINGS.find(x=>x.code===r)?.label : 'Not rated';
+        const rColor = r ? RATING_COLORS[r] : '888888';
+        const rBg = r ? RATING_BG[r] : 'F5F5F5';
+        const notes = document.getElementById('notes-'+dim.id)?.value||'';
+        const checked = dim.checks.filter(c=>document.getElementById(c.id)?.checked).map(c=>c.label);
+        const unchecked = dim.checks.filter(c=>!document.getElementById(c.id)?.checked).map(c=>c.label);
+        
+        // Dim header row
+        children.push(new Table({
+          width:{size:9360,type:WidthType.DXA},
+          columnWidths:[6360,3000],
+          rows:[new TableRow({children:[
+            makeCell([new Paragraph({children:[new TextRun({text:dim.title,font:'Arial',size:22,bold:true,color:'1A1814'})]})],{width:{size:6360,type:WidthType.DXA},bg:'F0EDE8'}),
+            makeCell([new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:rLabel,font:'Arial',size:20,bold:true,color:rColor})]})],{width:{size:3000,type:WidthType.DXA},bg:rBg})
+          ]})]
+        }));
+        
+        // Indicators table
+        const indicatorRows = [];
+        if(checked.length>0){
+          checked.forEach(item=>{
+            indicatorRows.push(new TableRow({children:[
+              makeCell('✓',{width:{size:400,type:WidthType.DXA},bold:true,color:'2D6B2D',bg:'EAF4EA'}),
+              makeCell(item,{width:{size:8960,type:WidthType.DXA},bg:'EAF4EA'})
+            ]}));
+          });
+        }
+        if(unchecked.length>0){
+          unchecked.forEach(item=>{
+            indicatorRows.push(new TableRow({children:[
+              makeCell('□',{width:{size:400,type:WidthType.DXA},color:'AAAAAA'}),
+              makeCell(item,{width:{size:8960,type:WidthType.DXA},color:'999999'})
+            ]}));
+          });
+        }
+        
+        if(indicatorRows.length>0){
+          children.push(new Table({
+            width:{size:9360,type:WidthType.DXA},
+            columnWidths:[400,8960],
+            rows:indicatorRows
+          }));
+        }
+        
+        // Notes
+        children.push(new Table({
+          width:{size:9360,type:WidthType.DXA},
+          columnWidths:[1800,7560],
+          rows:[new TableRow({children:[
+            makeCell('Observation notes',{width:{size:1800,type:WidthType.DXA},bold:true,bg:'F0EDE8',color:'6B6560'}),
+            makeCell(notes||'(no notes entered)',{width:{size:7560,type:WidthType.DXA},color:notes?'333333':'AAAAAA'})
+          ]})]
+        }));
+
+        // Coaching tips if generated
+        const coaching = (state.coaching||{})[dim.id];
+        if(coaching && coaching.steps && coaching.steps.some(s=>s.what)){
+          const nextLbl = RATING_LABEL[coaching.nextCode]||'';
+          const curLbl = RATING_LABEL[coaching.currentCode]||'';
+          children.push(new Paragraph({spacing:{before:120,after:60},children:[new TextRun({text:`Growth Coaching: ${curLbl} → ${nextLbl}`,font:'Arial',size:20,bold:true,color:'2D6B2D'})]}));
+          if(coaching.intro){
+            children.push(new Paragraph({spacing:{after:80},children:[new TextRun({text:coaching.intro,font:'Arial',size:18,italics:true,color:'444444'})]}));
+          }
+          coaching.steps.forEach((s,i)=>{
+            if(!s.what) return;
+            children.push(new Paragraph({spacing:{before:80,after:40},children:[new TextRun({text:`Step ${i+1}: ${s.what}`,font:'Arial',size:20,bold:true,color:'333333'})]}));
+            if(s.how) children.push(new Paragraph({spacing:{after:40},children:[new TextRun({text:s.how,font:'Arial',size:18,color:'333333'})]}));
+            if(s.example) children.push(new Paragraph({spacing:{after:60},children:[new TextRun({text:'💡 '+s.example,font:'Arial',size:18,italics:true,color:'555555'})]}));
+          });
+          if(coaching.closing){
+            children.push(new Paragraph({spacing:{after:80},children:[new TextRun({text:'🌟 '+coaching.closing,font:'Arial',size:18,italics:true,color:'2D6B2D'})]}));
+          }
+        }
+
+        children.push(new Paragraph({spacing:{after:200},children:[]}));
+      });
+    });
+    
+    // Summary
+    if(f.summary){
+      children.push(new Paragraph({
+        spacing:{before:240,after:120},
+        children:[new TextRun({text:'Summary & Next Steps',font:'Arial',size:26,bold:true,color:accentColor})]
+      }));
+      children.push(new Table({
+        width:{size:9360,type:WidthType.DXA},
+        columnWidths:[9360],
+        rows:[new TableRow({children:[makeCell(f.summary,{width:{size:9360,type:WidthType.DXA}})]})]
+      }));
+    }
+    
+    // Footer note
+    children.push(new Paragraph({spacing:{before:400},children:[]}));
+    children.push(new Paragraph({
+      alignment:AlignmentType.CENTER,
+      children:[new TextRun({text:'Pre-K T-TESS Walkthrough Observation — Texas Education Agency T-TESS (4/22/2024) adapted for Pre-Kindergarten',font:'Arial',size:16,color:'AAAAAA',italics:true})]
+    }));
+    
+    const doc = new Document({
+      styles:{default:{document:{run:{font:'Arial',size:20}}}},
+      sections:[{
+        properties:{page:{size:{width:12240,height:15840},margin:{top:1080,right:1080,bottom:1080,left:1080}}},
+        children
+      }]
+    });
+    
+    const blob = await Packer.toBlob(doc);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `PreK-TTESS-${f.teacher.replace(/\s+/g,'-')||'observation'}-${f.date||'report'}.docx`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    
+  }catch(err){
+    alert('Word export error: '+err.message);
+    console.error(err);
+  }
+  btn.disabled = false;
+  btn.textContent = '📝 Export Word';
+}
+
+// --- MASTER ANALYZE ---
+async function masterAnalyze(){
+  const notes = document.getElementById('master-notes').value.trim();
+  if(!notes){alert('Please type your observation notes in the box above first.');return;}
+
+  const btn = document.getElementById('master-btn');
+  const status = document.getElementById('master-status');
+  btn.disabled = true;
+  btn.textContent = 'Analyzing your notes...';
+  status.className = 'master-status running';
+  status.innerHTML = 'Reading your notes and matching to T-TESS dimensions...<div class="master-progress-row"><div class="master-prog-track"><div class="master-prog-fill" id="mpf" style="width:0%"></div></div></div>';
+
+  const dimList = DOMAINS.flatMap(d=>d.dims).map(dim=>dim.id+': '+dim.title+' - '+dim.desc).join('\n');
+
+  const prompt = `You are an expert Texas T-TESS evaluator helping a principal analyze raw Pre-K walkthrough notes.
+
+OBSERVATION NOTES:
+"""
+${notes}
+"""
+
+Rate each dimension ONLY based on what is in the notes. If notes dont describe an area use Insufficient Evidence.
+
+RATING SCALE:
+Distinguished: ALL students, student-centered, students take ownership, consistently
+Accomplished: ALL/most students, teacher-facilitated, regularly, proactively  
+Proficient: ALL students, teacher-directed, does the action
+Developing: MOST students, sometimes, limited range
+Improvement Needed: FEW students, rarely, missing or harmful actions
+Insufficient Evidence: notes dont describe this area
+
+PRE-K CONTEXT: Play-based learning counts as rigorous instruction. Behavior management should be positive and preventive. Language modeling IS content instruction.
+
+DIMENSIONS:
+${dimList}
+
+RESPOND IN THIS EXACT FORMAT ONLY - no markdown, no extra text:
+DIM_1_1_RATING: [one rating from the scale above]
+DIM_1_1_NOTES: [1-2 sentences of specific evidence from the notes]
+DIM_1_2_RATING: [rating]
+DIM_1_2_NOTES: [evidence]
+DIM_1_4_RATING: [rating]
+DIM_1_4_NOTES: [evidence]
+DIM_2_1_RATING: [rating]
+DIM_2_1_NOTES: [evidence]
+DIM_2_2_RATING: [rating]
+DIM_2_2_NOTES: [evidence]
+DIM_2_3_RATING: [rating]
+DIM_2_3_NOTES: [evidence]
+DIM_2_4_RATING: [rating]
+DIM_2_4_NOTES: [evidence]
+DIM_2_5_RATING: [rating]
+DIM_2_5_NOTES: [evidence]
+DIM_3_1_RATING: [rating]
+DIM_3_1_NOTES: [evidence]
+DIM_3_2_RATING: [rating]
+DIM_3_2_NOTES: [evidence]
+DIM_3_3_RATING: [rating]
+DIM_3_3_NOTES: [evidence]
+DIM_4_1_RATING: [rating]
+DIM_4_1_NOTES: [evidence]`;
+
+  try{
+    const res = await fetch(PROXY_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({max_tokens:2000,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const text = data.content[0].text;
+
+    const ratingMap = {'distinguished':'D','accomplished':'A','proficient':'P','developing':'DEV','improvement needed':'I','insufficient evidence':'NA'};
+    const dimIds = DOMAINS.flatMap(d=>d.dims).map(dim=>dim.id);
+    let applied = 0;
+    const mpf = document.getElementById('mpf');
+    if(mpf) mpf.style.width = '40%';
+
+    dimIds.forEach(dimId=>{
+      const key = dimId.replace(/\./g,'_');
+      const ratingRx = new RegExp('DIM_'+key+'_RATING:\s*(.+?)(?:\n|$)','i');
+      const notesRx = new RegExp('DIM_'+key+'_NOTES:\s*([\s\S]+?)(?=DIM_[0-9]|$)','i');
+      const rm = text.match(ratingRx);
+      const nm = text.match(notesRx);
+
+      if(rm){
+        const raw = rm[1].trim().toLowerCase();
+        let code = null;
+        for(const [k,v] of Object.entries(ratingMap)){ if(raw.includes(k)){code=v;break;} }
+        if(code){
+          document.querySelectorAll('[data-dim="'+dimId+'"]').forEach(b=>b.className='rating-btn');
+          const target = document.querySelector('[data-dim="'+dimId+'"][data-r="'+code+'"]');
+          if(target) target.classList.add('sel-'+code);
+          state.ratings[dimId] = code;
+          showCoachPanel(dimId, code);
+          applied++;
+        }
+      }
+
+      if(nm){
+        const notesEl = document.getElementById('notes-'+dimId);
+        if(notesEl){
+          const newNote = nm[1].trim().replace(/\nDIM_.*$/s,'').trim();
+          const existing = notesEl.value.trim();
+          if(existing && !existing.includes(newNote)){
+            notesEl.value = existing + '\n\n[AI from master notes]: ' + newNote;
+          } else if(!existing){
+            notesEl.value = newNote;
+          }
+        }
+      }
+      updateDomainSummary(dimId);
+    });
+
+    if(mpf) mpf.style.width = '100%';
+    updateProgress();
+    updatePills();
+
+    DOMAINS.forEach(d=>{
+      document.getElementById('body-'+d.id).classList.add('open');
+      document.getElementById('chv-'+d.id).classList.add('open');
+      state.openDomains[d.id] = true;
+    });
+
+    status.className = 'master-status done';
+    status.innerHTML = 'Done! Suggested ratings for '+applied+' of '+dimIds.length+' dimensions. Scroll down to review — you can change any rating or add more notes and re-analyze anytime.';
+
+  }catch(err){
+    status.className = 'master-status error';
+    status.innerHTML = 'Error: '+err.message+'. Check your API key and try again.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Re-analyze notes (update all ratings)';
+}
+
+}
+
+
+}
+
+buildUI();
+</script>
+</body>
+</html>
