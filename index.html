@@ -1192,7 +1192,7 @@ DIM_4_1_CHECKS: [check numbers or none]`;
     const res = await fetch(PROXY_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({max_tokens:2000,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({max_tokens:4000,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
     if(data.error) throw new Error(data.error.message);
@@ -1207,7 +1207,7 @@ DIM_4_1_CHECKS: [check numbers or none]`;
     dimIds.forEach(dimId=>{
       const key = dimId.replace(/\./g,'_');
       const ratingRx = new RegExp('DIM_'+key+'_RATING:\s*(.+?)(?:\n|$)','i');
-      const notesRx = new RegExp('DIM_'+key+'_NOTES:\s*([\s\S]+?)(?=DIM_'+key+'_CHECKS:|DIM_[0-9]|$)','i');
+      const notesRx = new RegExp('DIM_'+key+'_NOTES:\s*([\s\S]+?)(?=DIM_'+key+'_CHECKS:|\nDIM_[0-9]|$)','i');
       const checksRx = new RegExp('DIM_'+key+'_CHECKS:\s*(.+?)(?:\n|$)','i');
       const rm = text.match(ratingRx);
       const nm = text.match(notesRx);
@@ -1231,7 +1231,7 @@ DIM_4_1_CHECKS: [check numbers or none]`;
       if(nm){
         const notesEl = document.getElementById('notes-'+dimId);
         if(notesEl){
-          const newNote = nm[1].trim().replace(/DIM_[0-9_]+.*/s,'').trim();
+          const newNote = nm[1].trim().replace(/\nDIM_[0-9].*/s,'').replace(/DIM_[0-9][._].*/s,'').trim();
           if(newNote && newNote.toLowerCase() !== 'insufficient evidence'){
             notesEl.value = newNote;
           }
