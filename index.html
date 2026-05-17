@@ -322,6 +322,7 @@ textarea.master-notes{min-height:110px;font-size:14px;line-height:1.6;border-col
   <div class="export-btns">
     <button class="btn btn-txt" onclick="exportTxt()">📄 Export .txt</button>
     <button class="btn btn-word" onclick="exportWord()" id="word-btn">📝 Export Word</button>
+    <button class="btn" style="background:#2d6b2d;color:#fff" onclick="exportEvidenceForm()">📋 Export Evidence Form</button>
   </div>
 </div>
 
@@ -1116,7 +1117,11 @@ async function masterAnalyze(){
   status.className = 'master-status running';
   status.innerHTML = 'Reading your notes and matching to T-TESS dimensions...<div class="master-progress-row"><div class="master-prog-track"><div class="master-prog-fill" id="mpf" style="width:0%"></div></div></div>';
 
-  const dimList = DOMAINS.flatMap(d=>d.dims).map(dim=>dim.id+': '+dim.title+' - '+dim.desc).join('\n');
+  // Build dimension list with their check indicators
+  const dimDataList = DOMAINS.flatMap(d=>d.dims).map(dim=>{
+    const checkList = dim.checks.map((c,i)=>`CHECK_${i+1}: ${c.label}`).join('\n');
+    return `DIM ${dim.id}: ${dim.title}\nDescription: ${dim.desc}\nIndicators:\n${checkList}`;
+  }).join('\n\n');
 
   const prompt = `You are an expert Texas T-TESS evaluator helping a principal analyze raw Pre-K walkthrough notes.
 
@@ -1125,46 +1130,62 @@ OBSERVATION NOTES:
 ${notes}
 """
 
-Rate each dimension ONLY based on what is in the notes. If notes dont describe an area use Insufficient Evidence.
+Rate each dimension ONLY based on what is in the notes. If notes do not describe an area, use "Insufficient Evidence".
 
 RATING SCALE:
-Distinguished: ALL students, student-centered, students take ownership, consistently
-Accomplished: ALL/most students, teacher-facilitated, regularly, proactively  
+Distinguished: ALL students, student-centered, students take ownership, consistently, enriching extensions
+Accomplished: ALL/most students, teacher-facilitated, regularly, proactively
 Proficient: ALL students, teacher-directed, does the action
 Developing: MOST students, sometimes, limited range
 Improvement Needed: FEW students, rarely, missing or harmful actions
-Insufficient Evidence: notes dont describe this area
+Insufficient Evidence: notes do not describe this area
 
-PRE-K CONTEXT: Play-based learning counts as rigorous instruction. Behavior management should be positive and preventive. Language modeling IS content instruction.
+PRE-K CONTEXT: Play-based learning counts as rigorous instruction. Behavior management should be positive and preventive. Language modeling IS content instruction. Turn-and-talk, partner work, and student-led drawing all count as higher-order engagement for Pre-K.
 
-DIMENSIONS:
-${dimList}
+DIMENSIONS WITH INDICATORS:
+${dimDataList}
+
+For NOTES: Write 2-4 sentences of specific evidence pulled directly from the observation notes above. Quote specific things you saw or heard. Be detailed enough that a teacher can read it and know exactly what was observed. Write in third person ("The teacher..." or "Students were seen...").
+
+For CHECKS: List the CHECK numbers (1, 2, 3, etc.) that were clearly observed based on the notes. Only include checks that have direct evidence. If none observed, write "none".
 
 RESPOND IN THIS EXACT FORMAT ONLY - no markdown, no extra text:
-DIM_1_1_RATING: [one rating from the scale above]
-DIM_1_1_NOTES: [1-2 sentences of specific evidence from the notes]
+DIM_1_1_RATING: [rating]
+DIM_1_1_NOTES: [2-4 sentences of specific evidence from the notes]
+DIM_1_1_CHECKS: [e.g. 1,2,3 or none]
 DIM_1_2_RATING: [rating]
 DIM_1_2_NOTES: [evidence]
+DIM_1_2_CHECKS: [check numbers or none]
 DIM_1_4_RATING: [rating]
 DIM_1_4_NOTES: [evidence]
+DIM_1_4_CHECKS: [check numbers or none]
 DIM_2_1_RATING: [rating]
 DIM_2_1_NOTES: [evidence]
+DIM_2_1_CHECKS: [check numbers or none]
 DIM_2_2_RATING: [rating]
 DIM_2_2_NOTES: [evidence]
+DIM_2_2_CHECKS: [check numbers or none]
 DIM_2_3_RATING: [rating]
 DIM_2_3_NOTES: [evidence]
+DIM_2_3_CHECKS: [check numbers or none]
 DIM_2_4_RATING: [rating]
 DIM_2_4_NOTES: [evidence]
+DIM_2_4_CHECKS: [check numbers or none]
 DIM_2_5_RATING: [rating]
 DIM_2_5_NOTES: [evidence]
+DIM_2_5_CHECKS: [check numbers or none]
 DIM_3_1_RATING: [rating]
 DIM_3_1_NOTES: [evidence]
+DIM_3_1_CHECKS: [check numbers or none]
 DIM_3_2_RATING: [rating]
 DIM_3_2_NOTES: [evidence]
+DIM_3_2_CHECKS: [check numbers or none]
 DIM_3_3_RATING: [rating]
 DIM_3_3_NOTES: [evidence]
+DIM_3_3_CHECKS: [check numbers or none]
 DIM_4_1_RATING: [rating]
-DIM_4_1_NOTES: [evidence]`;
+DIM_4_1_NOTES: [evidence]
+DIM_4_1_CHECKS: [check numbers or none]`;
 
   try{
     const res = await fetch(PROXY_URL,{
@@ -1185,15 +1206,17 @@ DIM_4_1_NOTES: [evidence]`;
     dimIds.forEach(dimId=>{
       const key = dimId.replace(/\./g,'_');
       const ratingRx = new RegExp('DIM_'+key+'_RATING:\s*(.+?)(?:\n|$)','i');
-      const notesRx = new RegExp('DIM_'+key+'_NOTES:\s*([\s\S]+?)(?=DIM_[0-9]|$)','i');
+      const notesRx = new RegExp('DIM_'+key+'_NOTES:\s*([\s\S]+?)(?=DIM_'+key+'_CHECKS:|DIM_[0-9]|$)','i');
+      const checksRx = new RegExp('DIM_'+key+'_CHECKS:\s*(.+?)(?:\n|$)','i');
       const rm = text.match(ratingRx);
       const nm = text.match(notesRx);
+      const cm = text.match(checksRx);
 
       if(rm){
         const raw = rm[1].trim().toLowerCase();
         let code = null;
         for(const [k,v] of Object.entries(ratingMap)){ if(raw.includes(k)){code=v;break;} }
-        if(code){
+        if(code && code !== 'NA'){
           document.querySelectorAll('[data-dim="'+dimId+'"]').forEach(b=>b.className='rating-btn');
           const target = document.querySelector('[data-dim="'+dimId+'"][data-r="'+code+'"]');
           if(target) target.classList.add('sel-'+code);
@@ -1203,18 +1226,37 @@ DIM_4_1_NOTES: [evidence]`;
         }
       }
 
+      // Auto-fill evidence notes from observation text
       if(nm){
         const notesEl = document.getElementById('notes-'+dimId);
         if(notesEl){
-          const newNote = nm[1].trim().replace(/\nDIM_.*$/s,'').trim();
-          const existing = notesEl.value.trim();
-          if(existing && !existing.includes(newNote)){
-            notesEl.value = existing + '\n\n[AI from master notes]: ' + newNote;
-          } else if(!existing){
+          const newNote = nm[1].trim().replace(/DIM_[0-9_]+.*/s,'').trim();
+          if(newNote && newNote.toLowerCase() !== 'insufficient evidence'){
             notesEl.value = newNote;
           }
         }
       }
+
+      // Auto-check indicators that were observed
+      if(cm){
+        const checksStr = cm[1].trim().toLowerCase();
+        if(checksStr !== 'none' && checksStr !== 'insufficient evidence'){
+          const dim = DOMAINS.flatMap(d=>d.dims).find(d=>d.id===dimId);
+          if(dim){
+            const nums = checksStr.match(/\d+/g)||[];
+            nums.forEach(n=>{
+              const idx = parseInt(n)-1;
+              if(dim.checks[idx]){
+                const cb = document.getElementById(dim.checks[idx].id);
+                const row = document.getElementById('row-'+dim.checks[idx].id);
+                if(cb){ cb.checked = true; }
+                if(row){ row.classList.add('checked'); }
+              }
+            });
+          }
+        }
+      }
+
       updateDomainSummary(dimId);
     });
 
@@ -1238,6 +1280,69 @@ DIM_4_1_NOTES: [evidence]`;
 
   btn.disabled = false;
   btn.textContent = 'Re-analyze notes (update all ratings)';
+}
+
+function exportEvidenceForm(){
+  const f = getFormData();
+  const lines = [];
+  const hr = '='.repeat(60);
+  const hr2 = '-'.repeat(60);
+
+  lines.push('TTESS WALKTHROUGH FORM — EVIDENCE COPY');
+  lines.push('For copy/paste into your school system');
+  lines.push(hr);
+  lines.push('Teacher: '+f.teacher+'    Date: '+f.date+'    Time: '+f.time);
+  lines.push('Observer: '+f.observer);
+  lines.push('Activity: '+f.lesson);
+  lines.push(hr);
+  lines.push('');
+
+  DOMAINS.forEach(dom=>{
+    lines.push(dom.num.toUpperCase()+': '+dom.title.toUpperCase());
+    lines.push(hr2);
+    dom.dims.forEach(dim=>{
+      const r = state.ratings[dim.id];
+      const rLabel = r && r!=='NA' ? RATING_LABEL[r] : 'Not rated';
+      const notes = document.getElementById('notes-'+dim.id)?.value?.trim()||'';
+      const checked = dim.checks.filter(c=>document.getElementById(c.id)?.checked).map(c=>c.label);
+
+      lines.push('');
+      lines.push(dim.title);
+      lines.push('Rating: [ '+rLabel+' ]');
+      lines.push('');
+      lines.push('Evidence:');
+      if(notes){
+        lines.push(notes);
+      } else {
+        lines.push('(no evidence recorded)');
+      }
+      if(checked.length){
+        lines.push('');
+        lines.push('Indicators observed:');
+        checked.forEach(c=>lines.push('  ✓ '+c));
+      }
+      lines.push(hr2);
+    });
+    lines.push('');
+  });
+
+  if(f.summary){
+    lines.push('OVERALL SUMMARY & NEXT STEPS');
+    lines.push(hr2);
+    lines.push(f.summary);
+    lines.push('');
+  }
+
+  lines.push(hr);
+  lines.push('Overall Rating: '+(state.overallRating?RATING_LABEL[state.overallRating]:'Not rated'));
+  lines.push(hr);
+
+  const blob = new Blob([lines.join('\n')],{type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'TTESS-Evidence-'+f.teacher.replace(/\s+/g,'-')+'-'+f.date+'.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 buildUI();
