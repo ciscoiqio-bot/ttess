@@ -1351,9 +1351,9 @@ function buildEvidenceDocChildren(){
   // Build each domain
   const DOMAIN_LABELS = {d1:'Domain 1: Lesson Internalization',d2:'Domain 2: Instruction',d3:'Domain 3: Learning Environment',d4:'Domain 4: Professional Practices'};
   const DIM_LOOKFORS = {
-    '1.1':'All activities, materials, and assessments: are sequenced, are relevant to students' understanding, provide appropriate time for student work, fit into broader unit and course objectives, are aligned to state standards, are appropriate for diverse learners.',
+    '1.1':'All activities, materials, and assessments: are sequenced, are relevant to student understanding, provide appropriate time for student work, fit into broader unit and course objectives, are aligned to state standards, are appropriate for diverse learners.',
     '1.2':'Monitors progress of all students and incorporates appropriate formative and summative assessments. Provides specific and timely feedback. Student data connected to specific instructional strategies.',
-    '1.3':'Implements lessons that connect to students' prior knowledge, experiences. Adjusts instruction to address strengths and gaps in background knowledge, life experiences, and skills of all students.',
+    '1.3':'Implements lessons that connect to students prior knowledge, experiences. Adjusts instruction to address strengths and gaps in background knowledge, life experiences, and skills of all students.',
     '1.4':'Teacher prioritizes questions that encourage all students to engage in complex, higher-order thinking. Evidence of instructional groups based on the needs of students. All students understanding their individual roles.',
     '2.1':'High, challenging expectations. Persists with the lesson until there is evidence that almost all students demonstrate mastery. Provides opportunities for students to self-monitor and self-correct mistakes.',
     '2.2':'Content knowledge in multiple contexts. Objectives tied to other disciplines or real world. Anticipating misunderstandings. Conveys depth of content knowledge that allows for differentiated explanations.',
@@ -1462,9 +1462,9 @@ async function exportEvidencePDF(){
     // Build HTML for PDF print
     const RATING_COLS = ['Improvement Needed','Developing','Proficient','Accomplished','Distinguished'];
     const DIM_LOOKFORS = {
-      '1.1':'All activities, materials, and assessments are sequenced, relevant to students\'s understanding, provide appropriate time for student work, fit into broader unit and course objectives, are aligned to state standards, and are appropriate for diverse learners.',
+      '1.1':'All activities, materials, and assessments are sequenced, relevant to student understanding, provide appropriate time for student work, fit into broader unit and course objectives, aligned to state standards, and appropriate for diverse learners.',
       '1.2':'Monitors progress of all students. Provides specific and timely feedback. Student data connected to specific instructional strategies.',
-      '1.3':'Implements lessons that connect to students\' prior knowledge and experiences. Adjusts instruction to address strengths and gaps.',
+      '1.3':'Implements lessons that connect to students prior knowledge and experiences. Adjusts instruction to address strengths and gaps.',
       '1.4':'Teacher prioritizes questions for higher-order thinking. Evidence of instructional groups based on student needs. All students understand their roles.',
       '2.1':'High, challenging expectations. Persists with the lesson until almost all students demonstrate mastery. Provides opportunities for self-monitoring.',
       '2.2':'Content knowledge in multiple contexts. Objectives tied to other disciplines or real world. Anticipating misunderstandings. Differentiated explanations.',
@@ -1553,4 +1553,7 @@ h3{font-size:11px;font-weight:bold;margin:10px 0 2px}
   btn.disabled=false; btn.textContent='📄 Evidence Form (.pdf)';
 }
 
-
+buildUI();
+</script>
+</body>
+</html>
