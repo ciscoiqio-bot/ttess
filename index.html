@@ -322,7 +322,8 @@ textarea.master-notes{min-height:110px;font-size:14px;line-height:1.6;border-col
   <div class="export-btns">
     <button class="btn btn-txt" onclick="exportTxt()">📄 Export .txt</button>
     <button class="btn btn-word" onclick="exportWord()" id="word-btn">📝 Export Word</button>
-    <button class="btn" style="background:#2d6b2d;color:#fff" onclick="exportEvidenceForm()">📋 Export Evidence Form</button>
+    <button class="btn" style="background:#2d6b2d;color:#fff" onclick="exportEvidenceWord()" id="ev-word-btn">📋 Evidence Form (.docx)</button>
+    <button class="btn" style="background:#8a3a00;color:#fff" onclick="exportEvidencePDF()" id="ev-pdf-btn">📄 Evidence Form (.pdf)</button>
   </div>
 </div>
 
@@ -534,10 +535,10 @@ function buildDim(dim){
         <span class="ai-label"><span class="ai-dot"></span> AI rating assistant</span>
         <button class="ai-suggest-btn" onclick="aiSuggest('${dim.id}')" id="ai-btn-${dim.id}">✨ Suggest rating</button>
       </div>
-      <div id="ai-out-${dim.id}"><span style="font-size:12px;color:var(--text3)">Type observation notes below, then click "Suggest rating" for AI analysis.</span></div>
+      <div id="ai-out-${dim.id}"><span style="font-size:12px;color:var(--text3)">Add evidence notes below or use the master notes box above, then click "Suggest rating".</span></div>
     </div>
-    <div class="field-label" style="margin-bottom:5px">Observation notes</div>
-    <textarea class="notes" id="notes-${dim.id}" placeholder="Record specific evidence: what you saw the teacher do, what students were doing, direct quotes, engagement level..." oninput="autoSave()"></textarea>
+    <div class="field-label" style="margin-bottom:5px">Evidence</div>
+    <textarea class="notes" id="notes-${dim.id}" placeholder="Evidence from your observation will appear here after AI analysis. You can also type or edit directly..." oninput="autoSave()"></textarea>
     <div id="coach-${dim.id}" style="display:none"></div>
   </div>`;
 }
@@ -1145,7 +1146,7 @@ PRE-K CONTEXT: Play-based learning counts as rigorous instruction. Behavior mana
 DIMENSIONS WITH INDICATORS:
 ${dimDataList}
 
-For NOTES: Write 2-4 sentences of specific evidence pulled directly from the observation notes above. Quote specific things you saw or heard. Be detailed enough that a teacher can read it and know exactly what was observed. Write in third person ("The teacher..." or "Students were seen...").
+For NOTES: Write 2-4 sentences of polished evidence in professional observer language. Summarize what was seen using the observer's raw notes as your source — do not copy verbatim, but capture the key specific moments, quotes, and student engagement data. Write as if you are the principal documenting what you observed. Use third person ("The teacher..." "Students were observed..."). Include specific details like student counts, quoted teacher language, names of activities, and timestamps if present in the notes. This will be copied directly into the official walkthrough form.
 
 For CHECKS: List the CHECK numbers (1, 2, 3, etc.) that were clearly observed based on the notes. Only include checks that have direct evidence. If none observed, write "none".
 
@@ -1282,70 +1283,274 @@ DIM_4_1_CHECKS: [check numbers or none]`;
   btn.textContent = 'Re-analyze notes (update all ratings)';
 }
 
-function exportEvidenceForm(){
+function buildEvidenceDocChildren(){
+  const {
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+    AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign
+  } = docx;
   const f = getFormData();
-  const lines = [];
-  const hr = '='.repeat(60);
-  const hr2 = '-'.repeat(60);
+  const children = [];
+  const bdr = {style:BorderStyle.SINGLE,size:1,color:'999999'};
+  const borders = {top:bdr,bottom:bdr,left:bdr,right:bdr};
+  const noBdr = {top:{style:BorderStyle.NONE,size:0},bottom:{style:BorderStyle.NONE,size:0},left:{style:BorderStyle.NONE,size:0},right:{style:BorderStyle.NONE,size:0}};
+  const RATING_COLS = ['Improvement Needed','Developing','Proficient','Accomplished','Distinguished'];
 
-  lines.push('TTESS WALKTHROUGH FORM — EVIDENCE COPY');
-  lines.push('For copy/paste into your school system');
-  lines.push(hr);
-  lines.push('Teacher: '+f.teacher+'    Date: '+f.date+'    Time: '+f.time);
-  lines.push('Observer: '+f.observer);
-  lines.push('Activity: '+f.lesson);
-  lines.push(hr);
-  lines.push('');
-
-  DOMAINS.forEach(dom=>{
-    lines.push(dom.num.toUpperCase()+': '+dom.title.toUpperCase());
-    lines.push(hr2);
-    dom.dims.forEach(dim=>{
-      const r = state.ratings[dim.id];
-      const rLabel = r && r!=='NA' ? RATING_LABEL[r] : 'Not rated';
-      const notes = document.getElementById('notes-'+dim.id)?.value?.trim()||'';
-      const checked = dim.checks.filter(c=>document.getElementById(c.id)?.checked).map(c=>c.label);
-
-      lines.push('');
-      lines.push(dim.title);
-      lines.push('Rating: [ '+rLabel+' ]');
-      lines.push('');
-      lines.push('Evidence:');
-      if(notes){
-        lines.push(notes);
-      } else {
-        lines.push('(no evidence recorded)');
-      }
-      if(checked.length){
-        lines.push('');
-        lines.push('Indicators observed:');
-        checked.forEach(c=>lines.push('  ✓ '+c));
-      }
-      lines.push(hr2);
-    });
-    lines.push('');
+  const p = (text,opts={}) => new Paragraph({
+    spacing:{before:opts.before||0,after:opts.after||80},
+    alignment:opts.center?AlignmentType.CENTER:AlignmentType.LEFT,
+    children:[new TextRun({text:String(text),font:'Arial',size:opts.size||20,bold:opts.bold||false,color:opts.color||'000000',italics:opts.italic||false})]
   });
 
+  const cell = (text,opts={}) => new TableCell({
+    borders: opts.noBorder ? noBdr : borders,
+    width: opts.width ? {size:opts.width,type:WidthType.DXA} : undefined,
+    shading: opts.bg ? {fill:opts.bg,type:ShadingType.CLEAR} : undefined,
+    margins:{top:60,bottom:60,left:100,right:100},
+    verticalAlign: VerticalAlign.CENTER,
+    children:[new Paragraph({alignment:opts.center?AlignmentType.CENTER:AlignmentType.LEFT,children:[new TextRun({text:String(text||''),font:'Arial',size:opts.size||18,bold:opts.bold||false,color:opts.color||'000000'})]})]
+  });
+
+  const ratingRow = (dimLabel, ratingCode) => {
+    const rLabel = ratingCode && ratingCode!=='NA' ? RATING_LABEL[ratingCode] : null;
+    return new Table({
+      width:{size:9360,type:WidthType.DXA},
+      columnWidths:[2560,1360,1360,1360,1360,1360],
+      rows:[new TableRow({children:[
+        cell(dimLabel,{width:2560,bold:true,bg:'F2F2F2'}),
+        ...RATING_COLS.map(col=>{
+          const isSelected = rLabel && col.toLowerCase()===rLabel.toLowerCase();
+          return cell(isSelected?'✓':'_',{width:1360,center:true,bg:isSelected?'D6E4BC':'FFFFFF',bold:isSelected});
+        })
+      ]})]
+    });
+  };
+
+  // Header
+  children.push(p('TTESS Walkthrough Form — (Internalization)',{bold:true,size:24,center:true,after:120}));
+  children.push(new Table({
+    width:{size:9360,type:WidthType.DXA},
+    columnWidths:[1500,3180,1500,3180],
+    rows:[
+      new TableRow({children:[cell('Name:',{width:1500,bold:true,bg:'F2F2F2'}),cell(f.teacher,{width:3180}),cell('Appraiser:',{width:1500,bold:true,bg:'F2F2F2'}),cell(f.observer,{width:3180})]}),
+      new TableRow({children:[cell('Date:',{width:1500,bold:true,bg:'F2F2F2'}),cell(f.date+' '+f.time,{width:3180}),cell('School:',{width:1500,bold:true,bg:'F2F2F2'}),cell('',{width:3180})]}),
+      new TableRow({children:[cell('Activity:',{width:1500,bold:true,bg:'F2F2F2'}),cell(f.lesson,{width:7860,colSpan:3})]})
+    ]
+  }));
+  children.push(p('',{after:120}));
+
+  // Rating columns header
+  const ratingHeaderRow = () => new Table({
+    width:{size:9360,type:WidthType.DXA},
+    columnWidths:[2560,1360,1360,1360,1360,1360],
+    rows:[new TableRow({children:[
+      cell('Dimension',{width:2560,bold:true,bg:'2E5496',color:'FFFFFF'}),
+      ...RATING_COLS.map(col=>cell(col,{width:1360,center:true,bold:true,bg:'2E5496',color:'FFFFFF',size:16}))
+    ]})]
+  });
+
+  // Build each domain
+  const DOMAIN_LABELS = {d1:'Domain 1: Lesson Internalization',d2:'Domain 2: Instruction',d3:'Domain 3: Learning Environment',d4:'Domain 4: Professional Practices'};
+  const DIM_LOOKFORS = {
+    '1.1':'All activities, materials, and assessments: are sequenced, are relevant to students' understanding, provide appropriate time for student work, fit into broader unit and course objectives, are aligned to state standards, are appropriate for diverse learners.',
+    '1.2':'Monitors progress of all students and incorporates appropriate formative and summative assessments. Provides specific and timely feedback. Student data connected to specific instructional strategies.',
+    '1.3':'Implements lessons that connect to students' prior knowledge, experiences. Adjusts instruction to address strengths and gaps in background knowledge, life experiences, and skills of all students.',
+    '1.4':'Teacher prioritizes questions that encourage all students to engage in complex, higher-order thinking. Evidence of instructional groups based on the needs of students. All students understanding their individual roles.',
+    '2.1':'High, challenging expectations. Persists with the lesson until there is evidence that almost all students demonstrate mastery. Provides opportunities for students to self-monitor and self-correct mistakes.',
+    '2.2':'Content knowledge in multiple contexts. Objectives tied to other disciplines or real world. Anticipating misunderstandings. Conveys depth of content knowledge that allows for differentiated explanations.',
+    '2.3':'Two-way communication (teacher-to-student, peer-to-peer). Skillfully balances wait time and questioning techniques. Asks questions at the creative, evaluative and/or analysis levels.',
+    '2.4':'Adapts lessons with a wide variety of instructional strategies to address individual needs of all students. Provides differentiated instructional methods. Consistently prevents student confusion and disengagement.',
+    '2.5':'Systematically gathers input from students to monitor and adjust instruction. Uses discreet and explicit checks for understanding through questioning and academic feedback. Adjusts instruction to maintain engagement.',
+    '3.1':'Established and effective routines, procedures, and transitions. Students take primary leadership and management of groups/supplies/equipment. Safety and organization to engage/challenge and inspire student participation.',
+    '3.2':'Classroom behavior system consistent and proficient. Students know and respect behavior standards. Teacher consistently monitors behavior subtly, reinforces positive behaviors and intercepts misbehavior fluidly.',
+    '3.3':'Student engagement with relevant/meaningful learning. Teacher consistently engages all students based on their interests and abilities to create positive rapport. Students have respect towards self, others and teacher.',
+    '4.1':'Teacher meets district expectations for attendance, professional appearance, decorum, procedural, ethical, legal and statutory responsibilities.'
+  };
+
+  DOMAINS.forEach(dom=>{
+    children.push(p(DOMAIN_LABELS[dom.id]||dom.title,{bold:true,size:22,color:'2E5496',before:200,after:80}));
+    children.push(ratingHeaderRow());
+
+    dom.dims.forEach(dim=>{
+      const r = state.ratings[dim.id];
+      const notes = document.getElementById('notes-'+dim.id)?.value?.trim()||'';
+      const lookfor = DIM_LOOKFORS[dim.id]||'';
+
+      // Dimension title + description
+      children.push(p(dim.title+' — '+dim.desc,{bold:true,size:18,before:120,after:40}));
+      if(lookfor) children.push(p('LOOK FORS: '+lookfor,{italic:true,size:16,color:'444444',after:60}));
+
+      // Evidence box label
+      children.push(p(dim.id.split('.')[0]+'.'+dim.id.split('.')[1]+' Evidence:',{bold:true,size:18,after:40}));
+
+      // Evidence text box
+      children.push(new Table({
+        width:{size:9360,type:WidthType.DXA},
+        columnWidths:[9360],
+        rows:[new TableRow({children:[new TableCell({
+          borders,
+          width:{size:9360,type:WidthType.DXA},
+          margins:{top:80,bottom:80,left:120,right:120},
+          children:[new Paragraph({children:[new TextRun({text:notes||'',font:'Arial',size:18})]}),
+                    ...(notes?[]:[new Paragraph({children:[new TextRun({text:' ',font:'Arial',size:18})]}),
+                                  new Paragraph({children:[new TextRun({text:' ',font:'Arial',size:18})]})])]
+        })]})]
+      }));
+
+      // Rating label + rating table
+      children.push(p('Dimension '+dim.id+' Rating:',{bold:true,size:18,before:80,after:40}));
+      children.push(ratingRow(dim.title.split(' ').slice(0,3).join(' '),r));
+      children.push(p('',{after:80}));
+    });
+
+    // Domain summary boxes
+    children.push(p('Domain Summary:',{bold:true,size:20,before:120,after:40}));
+    children.push(p('Praise/Reinforcement for Domain:',{bold:true,size:18,after:40}));
+    children.push(new Table({width:{size:9360,type:WidthType.DXA},columnWidths:[9360],rows:[new TableRow({children:[new TableCell({borders,width:{size:9360,type:WidthType.DXA},margins:{top:60,bottom:60,left:120,right:120},children:[new Paragraph({children:[new TextRun({text:' ',font:'Arial',size:18})]}),new Paragraph({children:[new TextRun({text:' ',font:'Arial',size:18})]})]})]})]}));
+    children.push(p('Polish/Refinement for Domain:',{bold:true,size:18,before:80,after:40}));
+    children.push(new Table({width:{size:9360,type:WidthType.DXA},columnWidths:[9360],rows:[new TableRow({children:[new TableCell({borders,width:{size:9360,type:WidthType.DXA},margins:{top:60,bottom:60,left:120,right:120},children:[new Paragraph({children:[new TextRun({text:' ',font:'Arial',size:18})]}),new Paragraph({children:[new TextRun({text:' ',font:'Arial',size:18})]})]})]})]}));
+  });
+
+  // Overall summary
   if(f.summary){
-    lines.push('OVERALL SUMMARY & NEXT STEPS');
-    lines.push(hr2);
-    lines.push(f.summary);
-    lines.push('');
+    children.push(p('Overall Summary & Next Steps',{bold:true,size:22,color:'2E5496',before:200,after:80}));
+    children.push(new Table({width:{size:9360,type:WidthType.DXA},columnWidths:[9360],rows:[new TableRow({children:[new TableCell({borders,width:{size:9360,type:WidthType.DXA},margins:{top:80,bottom:80,left:120,right:120},children:[new Paragraph({children:[new TextRun({text:f.summary,font:'Arial',size:18})]})]})]})]}));
   }
 
-  lines.push(hr);
-  lines.push('Overall Rating: '+(state.overallRating?RATING_LABEL[state.overallRating]:'Not rated'));
-  lines.push(hr);
+  // Signatures
+  children.push(p('',{before:200}));
+  children.push(new Table({
+    width:{size:9360,type:WidthType.DXA},
+    columnWidths:[3500,500,1300,500,3000,460],
+    rows:[new TableRow({children:[
+      cell(f.teacher,{width:3500}),cell('',{width:500,noBorder:true}),
+      cell('Date:',{width:1300}),cell('',{width:500,noBorder:true}),
+      cell(f.observer+', Appraiser',{width:3000}),cell('',{width:460,noBorder:true})
+    ]})]
+  }));
 
-  const blob = new Blob([lines.join('\n')],{type:'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'TTESS-Evidence-'+f.teacher.replace(/\s+/g,'-')+'-'+f.date+'.txt';
-  a.click();
-  URL.revokeObjectURL(a.href);
+  return children;
 }
 
-buildUI();
-</script>
-</body>
-</html>
+async function exportEvidenceWord(){
+  const btn = document.getElementById('ev-word-btn');
+  btn.disabled=true; btn.textContent='⏳ Building...';
+  try{
+    const {Document,Packer} = docx;
+    const f = getFormData();
+    const doc2 = new Document({
+      styles:{default:{document:{run:{font:'Arial',size:20}}}},
+      sections:[{
+        properties:{page:{size:{width:12240,height:15840},margin:{top:1080,right:1080,bottom:1080,left:1080}}},
+        children: buildEvidenceDocChildren()
+      }]
+    });
+    const blob = await Packer.toBlob(doc2);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'TTESS-'+f.teacher.replace(/\s+/g,'-')+'-'+f.date+'.docx';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }catch(e){alert('Word export error: '+e.message);console.error(e);}
+  btn.disabled=false; btn.textContent='📋 Evidence Form (.docx)';
+}
+
+async function exportEvidencePDF(){
+  const btn = document.getElementById('ev-pdf-btn');
+  btn.disabled=true; btn.textContent='⏳ Building PDF...';
+  try{
+    const f = getFormData();
+    // Build HTML for PDF print
+    const RATING_COLS = ['Improvement Needed','Developing','Proficient','Accomplished','Distinguished'];
+    const DIM_LOOKFORS = {
+      '1.1':'All activities, materials, and assessments are sequenced, relevant to students\'s understanding, provide appropriate time for student work, fit into broader unit and course objectives, are aligned to state standards, and are appropriate for diverse learners.',
+      '1.2':'Monitors progress of all students. Provides specific and timely feedback. Student data connected to specific instructional strategies.',
+      '1.3':'Implements lessons that connect to students\' prior knowledge and experiences. Adjusts instruction to address strengths and gaps.',
+      '1.4':'Teacher prioritizes questions for higher-order thinking. Evidence of instructional groups based on student needs. All students understand their roles.',
+      '2.1':'High, challenging expectations. Persists with the lesson until almost all students demonstrate mastery. Provides opportunities for self-monitoring.',
+      '2.2':'Content knowledge in multiple contexts. Objectives tied to other disciplines or real world. Anticipating misunderstandings. Differentiated explanations.',
+      '2.3':'Two-way communication. Skillfully balances wait time and questioning. Asks questions at creative, evaluative and/or analysis levels.',
+      '2.4':'Adapts lessons to address individual needs of all students. Provides differentiated instructional methods. Prevents student confusion and disengagement.',
+      '2.5':'Systematically gathers input to monitor and adjust instruction. Uses explicit checks for understanding. Adjusts instruction to maintain engagement.',
+      '3.1':'Established and effective routines, procedures, and transitions. Students take primary leadership of groups/supplies. Safety and organization to inspire participation.',
+      '3.2':'Classroom behavior system consistent and proficient. Students know and respect behavior standards. Teacher monitors behavior and reinforces positive behaviors.',
+      '3.3':'Student engagement with relevant/meaningful learning. Teacher consistently engages all students. Students have respect towards self, others and teacher.',
+      '4.1':'Teacher meets district expectations for attendance, professional appearance, decorum, procedural, ethical, legal and statutory responsibilities.'
+    };
+    const DOMAIN_LABELS = {d1:'Domain 1: Lesson Internalization',d2:'Domain 2: Instruction',d3:'Domain 3: Learning Environment',d4:'Domain 4: Professional Practices'};
+
+    let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>TTESS Walkthrough</title>
+<style>
+body{font-family:Arial,sans-serif;font-size:11px;margin:0;padding:20px;color:#000}
+h1{font-size:15px;text-align:center;margin-bottom:12px}
+h2{font-size:13px;color:#2E5496;margin:16px 0 4px}
+h3{font-size:11px;font-weight:bold;margin:10px 0 2px}
+.meta-table{width:100%;border-collapse:collapse;margin-bottom:12px}
+.meta-table td{border:1px solid #999;padding:4px 6px;font-size:11px}
+.meta-table .lbl{background:#f2f2f2;font-weight:bold;width:15%}
+.rating-table{width:100%;border-collapse:collapse;margin:4px 0}
+.rating-table th{background:#2E5496;color:#fff;text-align:center;padding:4px;font-size:10px;border:1px solid #999}
+.rating-table td{border:1px solid #999;padding:4px 6px;font-size:10px;text-align:center}
+.rating-table .dim-label{text-align:left;font-weight:bold;background:#f2f2f2}
+.selected{background:#D6E4BC;font-weight:bold}
+.evidence-box{border:1px solid #999;min-height:60px;padding:6px;margin:4px 0;font-size:11px;line-height:1.5}
+.lookfor{font-style:italic;color:#444;font-size:10px;margin:2px 0 6px}
+.empty-box{border:1px solid #999;height:40px;margin:4px 0}
+.sig-table{width:100%;border-collapse:collapse;margin-top:20px}
+.sig-table td{border:none;border-bottom:1px solid #000;padding:4px;font-size:11px}
+@media print{body{padding:10px}.page-break{page-break-before:always}}
+</style></head><body>
+<h1>TTESS Walkthrough Form — (Internalization)</h1>
+<table class="meta-table">
+<tr><td class="lbl">Name:</td><td>${f.teacher}</td><td class="lbl">Appraiser:</td><td>${f.observer}</td></tr>
+<tr><td class="lbl">Date/Time:</td><td>${f.date} ${f.time}</td><td class="lbl">School:</td><td></td></tr>
+<tr><td class="lbl">Activity:</td><td colspan="3">${f.lesson}</td></tr>
+</table>`;
+
+    DOMAINS.forEach((dom,di)=>{
+      if(di>0) html += '<div class="page-break"></div>';
+      html += `<h2>${DOMAIN_LABELS[dom.id]||dom.title}</h2>`;
+      html += `<table class="rating-table"><tr><th style="text-align:left;width:30%">Dimension</th>${RATING_COLS.map(c=>`<th>${c}</th>`).join('')}</tr>`;
+      dom.dims.forEach(dim=>{
+        const r = state.ratings[dim.id];
+        const rLabel = r && r!=='NA' ? RATING_LABEL[r] : null;
+        html += `<tr><td class="dim-label">${dim.title}</td>${RATING_COLS.map(col=>{
+          const sel = rLabel && col.toLowerCase()===rLabel.toLowerCase();
+          return `<td class="${sel?'selected':''}">${sel?'✓':'_'}</td>`;
+        }).join('')}</tr>`;
+      });
+      html += '</table>';
+
+      dom.dims.forEach(dim=>{
+        const notes = document.getElementById('notes-'+dim.id)?.value?.trim()||'';
+        const lookfor = DIM_LOOKFORS[dim.id]||'';
+        html += `<h3>${dim.title}</h3>`;
+        if(lookfor) html += `<div class="lookfor">LOOK FORS: ${lookfor}</div>`;
+        html += `<strong>${dim.id} Evidence:</strong>`;
+        html += `<div class="evidence-box">${notes||'&nbsp;'}</div>`;
+      });
+
+      html += `<strong>Domain Summary:</strong>
+<div style="margin:6px 0"><strong>Praise/Reinforcement:</strong></div><div class="empty-box"></div>
+<div style="margin:6px 0"><strong>Polish/Refinement:</strong></div><div class="empty-box"></div>`;
+    });
+
+    if(f.summary){
+      html += `<h2>Overall Summary & Next Steps</h2><div class="evidence-box">${f.summary}</div>`;
+    }
+
+    html += `<table class="sig-table"><tr>
+<td style="width:40%">${f.teacher}</td><td style="width:5%"></td>
+<td style="width:20%">Date:</td><td style="width:5%"></td>
+<td style="width:25%">${f.observer}, Appraiser</td>
+</tr></table>`;
+    html += '</body></html>';
+
+    const win = window.open('','_blank');
+    win.document.write(html);
+    win.document.close();
+    setTimeout(()=>{win.print();},600);
+  }catch(e){alert('PDF export error: '+e.message);}
+  btn.disabled=false; btn.textContent='📄 Evidence Form (.pdf)';
+}
+
+
